@@ -1,0 +1,23 @@
+{
+  "name": "@kevinbonnoron/pocketbase-react-hooks",
+  "version": "1.0.0-rc.16",
+  "exports": "./src/index.ts",
+  "publish": {
+    "exclude": [
+      ".devcontainer",
+      ".github",
+      ".vscode",
+      ".cursorrules",
+      "coverage",
+      "dist",
+      "examples",
+      "node_modules",
+      "tests",
+      "*.config.*",
+      "*.md",
+      "CLAUDE.md",
+      "lefthook.yml",
+      "bun.lockb"
+    ]
+  }
+}
