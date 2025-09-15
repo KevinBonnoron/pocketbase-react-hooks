@@ -1,0 +1,24 @@
+pre-commit:
+  commands:
+    format:
+      run: bun run format
+      glob: "*.{ts,tsx,js,jsx,json,md}"
+      stage_fixed: true
+    lint:
+      run: bun run lint
+      glob: "*.{ts,tsx,js,jsx}"
+    test:
+      run: bun run test
+      glob: "*.{ts,tsx}"
+    type-check:
+      run: bun run type-check
+      glob: "*.{ts,tsx}"
+
+pre-push:
+  commands:
+    build:
+      run: bun run build
+      glob: "*.{ts,tsx,js,jsx}"
+    jsr-dry-run:
+      run: bun run jsr:publish:dry-run
+      glob: "*.{ts,tsx}"
