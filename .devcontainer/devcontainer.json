@@ -1,0 +1,12 @@
+{
+  "name": "PocketBaseReactHooks",
+  "image": "ghcr.io/nhaef/devcontainer-bun:latest",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": ["biomejs.biome"]
+    }
+  }
+}
