@@ -1,0 +1,26 @@
+# Source files
+src/
+tests/
+examples/
+
+# Development files
+.github/
+.vscode/
+.editorconfig
+
+# Config files
+tsconfig.json
+vitest.config.mjs
+biome.json
+bun.lock
+
+# Documentation
+README.md
+*.md
+
+# Dependencies
+node_modules/
+
+# Build artifacts (keep dist/)
+*.log
+.DS_Store
