@@ -1,6 +1,6 @@
 {
   "name": "pocketbase-react-hooks",
-  "version": "1.0.0-rc.5",
+  "version": "1.0.0-rc.6",
   "description": "Collection of React hooks for Pocketbase integration",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
