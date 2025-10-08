@@ -1,6 +1,6 @@
 {
   "name": "@kevinbonnoron/pocketbase-react-hooks",
-  "version": "1.0.0-rc.15",
+  "version": "1.0.0-rc.16",
   "exports": "./src/index.ts",
   "publish": {
     "exclude": [
