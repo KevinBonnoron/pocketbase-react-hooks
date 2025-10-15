@@ -2,7 +2,7 @@ import { act, renderHook } from '@testing-library/react';
 import type PocketBase from 'pocketbase';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAuth } from '../../src/hooks/useAuth';
-import { createMockAuthPocketBase, createWrapper, getMockCollectionMethods } from '../test-utils';
+import { createMockAuthPocketBase, createWrapper } from '../test-utils';
 
 describe('useAuth', () => {
   let mockPocketBase: PocketBase;
@@ -22,160 +22,212 @@ describe('useAuth', () => {
     expect(result.current.error).toBe(null);
   });
 
-  it('should handle signIn with email (basic)', async () => {
-    const mockAuthResponse = {
-      token: 'mock-token',
-      record: { id: '1', email: 'test@example.com' },
-    };
+  describe('signIn', () => {
+    describe('email', () => {
+      it('should handle signIn with email (basic)', async () => {
+        const mockAuthResponse = {
+          token: 'mock-token',
+          record: { id: '1', email: 'test@example.com' },
+        };
 
-    const mockAuth = vi.fn().mockResolvedValue(mockAuthResponse);
-    mockPocketBase.collection = vi.fn().mockReturnValue({
-      authWithPassword: mockAuth,
-    });
+        const mockAuth = vi.fn().mockResolvedValue(mockAuthResponse);
+        mockPocketBase.collection = vi.fn().mockReturnValue({
+          authWithPassword: mockAuth,
+        });
 
-    const wrapper = createWrapper(mockPocketBase);
+        const wrapper = createWrapper(mockPocketBase);
 
-    const { result } = renderHook(() => useAuth(), { wrapper });
+        const { result } = renderHook(() => useAuth(), { wrapper });
 
-    await act(async () => {
-      await result.current.signIn.email('test@example.com', 'password');
-    });
+        await act(async () => {
+          await result.current.signIn.email('test@example.com', 'password');
+        });
 
-    expect(mockAuth).toHaveBeenCalledWith('test@example.com', 'password', undefined);
-  });
+        expect(mockAuth).toHaveBeenCalledWith('test@example.com', 'password', undefined);
+      });
 
-  it('should handle signIn with email (with options)', async () => {
-    const mockAuthResponse = {
-      token: 'mock-token',
-      record: { id: '1', email: 'test@example.com' },
-    };
+      it('should handle signIn with email (with options)', async () => {
+        const mockAuthResponse = {
+          token: 'mock-token',
+          record: { id: '1', email: 'test@example.com' },
+        };
 
-    const mockAuth = vi.fn().mockResolvedValue(mockAuthResponse);
-    mockPocketBase.collection = vi.fn().mockReturnValue({
-      authWithPassword: mockAuth,
-    });
+        const mockAuth = vi.fn().mockResolvedValue(mockAuthResponse);
+        mockPocketBase.collection = vi.fn().mockReturnValue({
+          authWithPassword: mockAuth,
+        });
 
-    const wrapper = createWrapper(mockPocketBase);
+        const wrapper = createWrapper(mockPocketBase);
 
-    const { result } = renderHook(() => useAuth(), { wrapper });
+        const { result } = renderHook(() => useAuth(), { wrapper });
 
-    const options = { expand: 'profile' };
+        const options = { expand: 'profile' };
 
-    await act(async () => {
-      await result.current.signIn.email('test@example.com', 'password', options);
-    });
+        await act(async () => {
+          await result.current.signIn.email('test@example.com', 'password', options);
+        });
 
-    expect(mockAuth).toHaveBeenCalledWith('test@example.com', 'password', options);
-  });
-
-  it('should handle signIn with social provider (basic)', async () => {
-    const mockAuthResponse = {
-      token: 'mock-token',
-      record: { id: '1', email: 'test@example.com' },
-    };
-
-    const mockAuth = vi.fn().mockResolvedValue(mockAuthResponse);
-    mockPocketBase.collection = vi.fn().mockReturnValue({
-      authWithOAuth2: mockAuth,
-    });
-
-    const wrapper = createWrapper(mockPocketBase);
-
-    const { result } = renderHook(() => useAuth(), { wrapper });
-
-    await act(async () => {
-      await result.current.signIn.social('google');
-    });
-
-    expect(mockAuth).toHaveBeenCalledWith({ provider: 'google' });
-  });
-
-  it('should handle signIn with social provider (with scopes)', async () => {
-    const mockAuthResponse = {
-      token: 'mock-token',
-      record: { id: '1', email: 'test@example.com' },
-    };
-
-    const mockAuth = vi.fn().mockResolvedValue(mockAuthResponse);
-    mockPocketBase.collection = vi.fn().mockReturnValue({
-      authWithOAuth2: mockAuth,
-    });
-
-    const wrapper = createWrapper(mockPocketBase);
-
-    const { result } = renderHook(() => useAuth(), { wrapper });
-
-    await act(async () => {
-      await result.current.signIn.social('github', {
-        scopes: ['user:email', 'read:user'],
+        expect(mockAuth).toHaveBeenCalledWith('test@example.com', 'password', options);
       });
     });
 
-    expect(mockAuth).toHaveBeenCalledWith({
-      provider: 'github',
-      scopes: ['user:email', 'read:user'],
-    });
-  });
+    describe('social', () => {
+      it('should handle signIn with social provider (basic)', async () => {
+        const mockAuthResponse = {
+          token: 'mock-token',
+          record: { id: '1', email: 'test@example.com' },
+        };
 
-  it('should handle signIn with social provider (with createData)', async () => {
-    const mockAuthResponse = {
-      token: 'mock-token',
-      record: { id: '1', email: 'test@example.com' },
-    };
+        const mockAuth = vi.fn().mockResolvedValue(mockAuthResponse);
+        mockPocketBase.collection = vi.fn().mockReturnValue({
+          authWithOAuth2: mockAuth,
+        });
 
-    const mockAuth = vi.fn().mockResolvedValue(mockAuthResponse);
-    mockPocketBase.collection = vi.fn().mockReturnValue({
-      authWithOAuth2: mockAuth,
-    });
+        const wrapper = createWrapper(mockPocketBase);
 
-    const wrapper = createWrapper(mockPocketBase);
+        const { result } = renderHook(() => useAuth(), { wrapper });
 
-    const { result } = renderHook(() => useAuth(), { wrapper });
+        await act(async () => {
+          await result.current.signIn.social('google');
+        });
 
-    await act(async () => {
-      await result.current.signIn.social('discord', {
-        createData: {
-          name: 'John Doe',
-          avatar: 'https://example.com/avatar.jpg',
-        },
+        expect(mockAuth).toHaveBeenCalledWith({ provider: 'google' });
+      });
+
+      it('should handle signIn with social provider (with scopes)', async () => {
+        const mockAuthResponse = {
+          token: 'mock-token',
+          record: { id: '1', email: 'test@example.com' },
+        };
+
+        const mockAuth = vi.fn().mockResolvedValue(mockAuthResponse);
+        mockPocketBase.collection = vi.fn().mockReturnValue({
+          authWithOAuth2: mockAuth,
+        });
+
+        const wrapper = createWrapper(mockPocketBase);
+
+        const { result } = renderHook(() => useAuth(), { wrapper });
+
+        await act(async () => {
+          await result.current.signIn.social('github', {
+            scopes: ['user:email', 'read:user'],
+          });
+        });
+
+        expect(mockAuth).toHaveBeenCalledWith({
+          provider: 'github',
+          scopes: ['user:email', 'read:user'],
+        });
+      });
+
+      it('should handle signIn with social provider (with createData)', async () => {
+        const mockAuthResponse = {
+          token: 'mock-token',
+          record: { id: '1', email: 'test@example.com' },
+        };
+
+        const mockAuth = vi.fn().mockResolvedValue(mockAuthResponse);
+        mockPocketBase.collection = vi.fn().mockReturnValue({
+          authWithOAuth2: mockAuth,
+        });
+
+        const wrapper = createWrapper(mockPocketBase);
+
+        const { result } = renderHook(() => useAuth(), { wrapper });
+
+        await act(async () => {
+          await result.current.signIn.social('discord', {
+            createData: {
+              name: 'John Doe',
+              avatar: 'https://example.com/avatar.jpg',
+            },
+          });
+        });
+
+        expect(mockAuth).toHaveBeenCalledWith({
+          provider: 'discord',
+          createData: {
+            name: 'John Doe',
+            avatar: 'https://example.com/avatar.jpg',
+          },
+        });
+      });
+
+      it('should handle signIn with social provider (with urlCallback)', async () => {
+        const mockAuthResponse = {
+          token: 'mock-token',
+          record: { id: '1', email: 'test@example.com' },
+        };
+
+        const mockAuth = vi.fn().mockResolvedValue(mockAuthResponse);
+        mockPocketBase.collection = vi.fn().mockReturnValue({
+          authWithOAuth2: mockAuth,
+        });
+
+        const wrapper = createWrapper(mockPocketBase);
+
+        const { result } = renderHook(() => useAuth(), { wrapper });
+
+        const urlCallback = vi.fn();
+
+        await act(async () => {
+          await result.current.signIn.social('google', {
+            urlCallback,
+          });
+        });
+
+        expect(mockAuth).toHaveBeenCalledWith({
+          provider: 'google',
+          urlCallback,
+        });
       });
     });
 
-    expect(mockAuth).toHaveBeenCalledWith({
-      provider: 'discord',
-      createData: {
-        name: 'John Doe',
-        avatar: 'https://example.com/avatar.jpg',
-      },
-    });
-  });
+    describe('otp', () => {
+      it('should handle signIn with OTP (basic)', async () => {
+        const mockAuthResponse = {
+          token: 'mock-token',
+          record: { id: '1', email: 'test@example.com' },
+        };
 
-  it('should handle signIn with social provider (with urlCallback)', async () => {
-    const mockAuthResponse = {
-      token: 'mock-token',
-      record: { id: '1', email: 'test@example.com' },
-    };
+        const mockAuth = vi.fn().mockResolvedValue(mockAuthResponse);
+        mockPocketBase.collection = vi.fn().mockReturnValue({
+          authWithOTP: mockAuth,
+        });
 
-    const mockAuth = vi.fn().mockResolvedValue(mockAuthResponse);
-    mockPocketBase.collection = vi.fn().mockReturnValue({
-      authWithOAuth2: mockAuth,
-    });
+        const wrapper = createWrapper(mockPocketBase);
 
-    const wrapper = createWrapper(mockPocketBase);
+        const { result } = renderHook(() => useAuth(), { wrapper });
 
-    const { result } = renderHook(() => useAuth(), { wrapper });
+        await act(async () => {
+          await result.current.signIn.otp('123456', 'password');
+        });
 
-    const urlCallback = vi.fn();
-
-    await act(async () => {
-      await result.current.signIn.social('google', {
-        urlCallback,
+        expect(mockAuth).toHaveBeenCalledWith('123456', 'password', undefined);
       });
-    });
 
-    expect(mockAuth).toHaveBeenCalledWith({
-      provider: 'google',
-      urlCallback,
+      it('should handle signIn with OTP (with options)', async () => {
+        const mockAuthResponse = {
+          token: 'mock-token',
+          record: { id: '1', email: 'test@example.com' },
+        };
+
+        const mockAuth = vi.fn().mockResolvedValue(mockAuthResponse);
+        mockPocketBase.collection = vi.fn().mockReturnValue({
+          authWithOTP: mockAuth,
+        });
+
+        const wrapper = createWrapper(mockPocketBase);
+
+        const { result } = renderHook(() => useAuth(), { wrapper });
+
+        await act(async () => {
+          await result.current.signIn.otp('123456', 'password', { expand: 'profile' });
+        });
+
+        expect(mockAuth).toHaveBeenCalledWith('123456', 'password', { expand: 'profile' });
+      });
     });
   });
 
