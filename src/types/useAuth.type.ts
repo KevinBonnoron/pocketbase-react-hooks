@@ -9,6 +9,11 @@ export interface UseAuthOptions {
    * The name of the authentication collection (default: 'users')
    */
   collectionName?: string;
+
+  /**
+   * Enable or disable real-time updates (default: true)
+   */
+  realtime?: boolean;
 }
 
 /**

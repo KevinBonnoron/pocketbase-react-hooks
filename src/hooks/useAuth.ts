@@ -30,7 +30,7 @@ import { usePocketBase } from './usePocketBase';
  * };
  * ```
  */
-export function useAuth<User extends AuthRecord>({ collectionName = 'users' }: UseAuthOptions = {}): UseAuthResult<User> {
+export function useAuth<User extends AuthRecord>({ collectionName = 'users', realtime = true }: UseAuthOptions = {}): UseAuthResult<User> {
   const pb = usePocketBase();
   const [user, setUser] = useState<User | null>(pb.authStore.record as User);
   const [isLoading, setIsLoading] = useState(false);
@@ -44,7 +44,7 @@ export function useAuth<User extends AuthRecord>({ collectionName = 'users' }: U
   }, [pb]);
 
   useEffect(() => {
-    if (!user) {
+    if (!user || !realtime) {
       return;
     }
 
@@ -59,7 +59,7 @@ export function useAuth<User extends AuthRecord>({ collectionName = 'users' }: U
     return () => {
       unsubscribe.then((unsub) => unsub());
     };
-  }, [user, recordService]);
+  }, [user, recordService, realtime]);
 
   const signIn = useMemo(
     () => ({
@@ -116,13 +116,14 @@ export function useAuth<User extends AuthRecord>({ collectionName = 'users' }: U
         try {
           setIsLoading(true);
           setError(null);
+          const { additionalData, ...rest } = options;
           const record: User = await recordService.create(
             {
               email,
               password,
-              ...options.additionalData,
+              ...additionalData,
             },
-            options,
+            rest,
           );
 
           return record;

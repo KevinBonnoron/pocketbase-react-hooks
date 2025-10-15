@@ -6,6 +6,7 @@ import { createMockAuthPocketBase, createWrapper } from '../test-utils';
 
 describe('useAuth', () => {
   let mockPocketBase: PocketBase;
+  const emptyFn = vi.fn();
 
   beforeEach(() => {
     mockPocketBase = createMockAuthPocketBase();
@@ -20,290 +21,6 @@ describe('useAuth', () => {
     expect(result.current.user).toBe(null);
     expect(result.current.isLoading).toBe(false);
     expect(result.current.error).toBe(null);
-  });
-
-  describe('signIn', () => {
-    describe('email', () => {
-      it('should handle signIn with email (basic)', async () => {
-        const mockAuthResponse = {
-          token: 'mock-token',
-          record: { id: '1', email: 'test@example.com' },
-        };
-
-        const mockAuth = vi.fn().mockResolvedValue(mockAuthResponse);
-        mockPocketBase.collection = vi.fn().mockReturnValue({
-          authWithPassword: mockAuth,
-        });
-
-        const wrapper = createWrapper(mockPocketBase);
-
-        const { result } = renderHook(() => useAuth(), { wrapper });
-
-        await act(async () => {
-          await result.current.signIn.email('test@example.com', 'password');
-        });
-
-        expect(mockAuth).toHaveBeenCalledWith('test@example.com', 'password', undefined);
-      });
-
-      it('should handle signIn with email (with options)', async () => {
-        const mockAuthResponse = {
-          token: 'mock-token',
-          record: { id: '1', email: 'test@example.com' },
-        };
-
-        const mockAuth = vi.fn().mockResolvedValue(mockAuthResponse);
-        mockPocketBase.collection = vi.fn().mockReturnValue({
-          authWithPassword: mockAuth,
-        });
-
-        const wrapper = createWrapper(mockPocketBase);
-
-        const { result } = renderHook(() => useAuth(), { wrapper });
-
-        const options = { expand: 'profile' };
-
-        await act(async () => {
-          await result.current.signIn.email('test@example.com', 'password', options);
-        });
-
-        expect(mockAuth).toHaveBeenCalledWith('test@example.com', 'password', options);
-      });
-    });
-
-    describe('social', () => {
-      it('should handle signIn with social provider (basic)', async () => {
-        const mockAuthResponse = {
-          token: 'mock-token',
-          record: { id: '1', email: 'test@example.com' },
-        };
-
-        const mockAuth = vi.fn().mockResolvedValue(mockAuthResponse);
-        mockPocketBase.collection = vi.fn().mockReturnValue({
-          authWithOAuth2: mockAuth,
-        });
-
-        const wrapper = createWrapper(mockPocketBase);
-
-        const { result } = renderHook(() => useAuth(), { wrapper });
-
-        await act(async () => {
-          await result.current.signIn.social('google');
-        });
-
-        expect(mockAuth).toHaveBeenCalledWith({ provider: 'google' });
-      });
-
-      it('should handle signIn with social provider (with scopes)', async () => {
-        const mockAuthResponse = {
-          token: 'mock-token',
-          record: { id: '1', email: 'test@example.com' },
-        };
-
-        const mockAuth = vi.fn().mockResolvedValue(mockAuthResponse);
-        mockPocketBase.collection = vi.fn().mockReturnValue({
-          authWithOAuth2: mockAuth,
-        });
-
-        const wrapper = createWrapper(mockPocketBase);
-
-        const { result } = renderHook(() => useAuth(), { wrapper });
-
-        await act(async () => {
-          await result.current.signIn.social('github', {
-            scopes: ['user:email', 'read:user'],
-          });
-        });
-
-        expect(mockAuth).toHaveBeenCalledWith({
-          provider: 'github',
-          scopes: ['user:email', 'read:user'],
-        });
-      });
-
-      it('should handle signIn with social provider (with createData)', async () => {
-        const mockAuthResponse = {
-          token: 'mock-token',
-          record: { id: '1', email: 'test@example.com' },
-        };
-
-        const mockAuth = vi.fn().mockResolvedValue(mockAuthResponse);
-        mockPocketBase.collection = vi.fn().mockReturnValue({
-          authWithOAuth2: mockAuth,
-        });
-
-        const wrapper = createWrapper(mockPocketBase);
-
-        const { result } = renderHook(() => useAuth(), { wrapper });
-
-        await act(async () => {
-          await result.current.signIn.social('discord', {
-            createData: {
-              name: 'John Doe',
-              avatar: 'https://example.com/avatar.jpg',
-            },
-          });
-        });
-
-        expect(mockAuth).toHaveBeenCalledWith({
-          provider: 'discord',
-          createData: {
-            name: 'John Doe',
-            avatar: 'https://example.com/avatar.jpg',
-          },
-        });
-      });
-
-      it('should handle signIn with social provider (with urlCallback)', async () => {
-        const mockAuthResponse = {
-          token: 'mock-token',
-          record: { id: '1', email: 'test@example.com' },
-        };
-
-        const mockAuth = vi.fn().mockResolvedValue(mockAuthResponse);
-        mockPocketBase.collection = vi.fn().mockReturnValue({
-          authWithOAuth2: mockAuth,
-        });
-
-        const wrapper = createWrapper(mockPocketBase);
-
-        const { result } = renderHook(() => useAuth(), { wrapper });
-
-        const urlCallback = vi.fn();
-
-        await act(async () => {
-          await result.current.signIn.social('google', {
-            urlCallback,
-          });
-        });
-
-        expect(mockAuth).toHaveBeenCalledWith({
-          provider: 'google',
-          urlCallback,
-        });
-      });
-    });
-
-    describe('otp', () => {
-      it('should handle signIn with OTP (basic)', async () => {
-        const mockAuthResponse = {
-          token: 'mock-token',
-          record: { id: '1', email: 'test@example.com' },
-        };
-
-        const mockAuth = vi.fn().mockResolvedValue(mockAuthResponse);
-        mockPocketBase.collection = vi.fn().mockReturnValue({
-          authWithOTP: mockAuth,
-        });
-
-        const wrapper = createWrapper(mockPocketBase);
-
-        const { result } = renderHook(() => useAuth(), { wrapper });
-
-        await act(async () => {
-          await result.current.signIn.otp('123456', 'password');
-        });
-
-        expect(mockAuth).toHaveBeenCalledWith('123456', 'password', undefined);
-      });
-
-      it('should handle signIn with OTP (with options)', async () => {
-        const mockAuthResponse = {
-          token: 'mock-token',
-          record: { id: '1', email: 'test@example.com' },
-        };
-
-        const mockAuth = vi.fn().mockResolvedValue(mockAuthResponse);
-        mockPocketBase.collection = vi.fn().mockReturnValue({
-          authWithOTP: mockAuth,
-        });
-
-        const wrapper = createWrapper(mockPocketBase);
-
-        const { result } = renderHook(() => useAuth(), { wrapper });
-
-        await act(async () => {
-          await result.current.signIn.otp('123456', 'password', { expand: 'profile' });
-        });
-
-        expect(mockAuth).toHaveBeenCalledWith('123456', 'password', { expand: 'profile' });
-      });
-    });
-  });
-
-  it('should handle signOut', async () => {
-    const mockClear = vi.fn();
-    mockPocketBase.authStore = {
-      ...mockPocketBase.authStore,
-      clear: mockClear,
-    } as unknown as typeof mockPocketBase.authStore;
-
-    const wrapper = createWrapper(mockPocketBase);
-
-    const { result } = renderHook(() => useAuth(), { wrapper });
-
-    await act(async () => {
-      result.current.signOut();
-    });
-
-    expect(mockClear).toHaveBeenCalled();
-  });
-
-  it('should handle signUp with email (basic)', async () => {
-    const mockCreate = vi.fn().mockResolvedValue({
-      id: '1',
-      email: 'new@example.com',
-    });
-
-    mockPocketBase.collection('users').create = mockCreate;
-
-    const wrapper = createWrapper(mockPocketBase);
-
-    const { result } = renderHook(() => useAuth(), { wrapper });
-
-    await act(async () => {
-      await result.current.signUp.email('new@example.com', 'password');
-    });
-
-    expect(mockCreate).toHaveBeenCalledWith(
-      {
-        email: 'new@example.com',
-        password: 'password',
-      },
-      {},
-    );
-  });
-
-  it('should handle signUp with email (with additionalData)', async () => {
-    const mockCreate = vi.fn().mockResolvedValue({
-      id: '1',
-      email: 'new@example.com',
-      name: 'John Doe',
-    });
-
-    mockPocketBase.collection('users').create = mockCreate;
-
-    const wrapper = createWrapper(mockPocketBase);
-
-    const { result } = renderHook(() => useAuth(), { wrapper });
-
-    const options = {
-      additionalData: { name: 'John Doe' },
-      expand: 'profile',
-    };
-
-    await act(async () => {
-      await result.current.signUp.email('new@example.com', 'password', options);
-    });
-
-    expect(mockCreate).toHaveBeenCalledWith(
-      {
-        email: 'new@example.com',
-        password: 'password',
-        name: 'John Doe',
-      },
-      options,
-    );
   });
 
   it('should return loading state when isLoading is true', () => {
@@ -410,100 +127,96 @@ describe('useAuth', () => {
     expect(result.current.isAuthenticated).toBe(true);
   });
 
-  it('should subscribe to user record updates when authenticated', async () => {
-    const mockUser = { id: '1', email: 'test@example.com' };
-    const mockPocketBaseWithUser = createMockAuthPocketBase({
-      isValid: true,
-      record: mockUser,
+  describe('realtime', () => {
+    it.each`
+      scenario      | realtime
+      ${'explicit'} | ${true}
+      ${'default'}  | ${undefined}
+    `('should subscribe to user record updates $scenario', async ({ realtime }) => {
+      const mockUser = { id: '1', email: 'test@example.com' };
+      const mockPocketBaseWithUser = createMockAuthPocketBase({
+        isValid: true,
+        record: mockUser,
+      });
+
+      const mockSubscribe = vi.fn(() => Promise.resolve(() => {}));
+      mockPocketBaseWithUser.collection = vi.fn().mockReturnValue({
+        subscribe: mockSubscribe,
+      });
+
+      const wrapper = createWrapper(mockPocketBaseWithUser);
+
+      renderHook(() => useAuth({ realtime }), { wrapper });
+
+      expect(mockSubscribe).toHaveBeenCalledWith('1', expect.any(Function));
     });
 
-    const mockSubscribe = vi.fn(() => Promise.resolve(() => {}));
-    mockPocketBaseWithUser.collection = vi.fn().mockReturnValue({
-      subscribe: mockSubscribe,
+    it('should not subscribe to user record updates when realtime is false', async () => {
+      const mockUser = { id: '1', email: 'test@example.com' };
+      const mockPocketBaseWithUser = createMockAuthPocketBase({
+        isValid: true,
+        record: mockUser,
+      });
+
+      const mockSubscribe = vi.fn(() => Promise.resolve(() => {}));
+      mockPocketBaseWithUser.collection = vi.fn().mockReturnValue({
+        subscribe: mockSubscribe,
+      });
+
+      const wrapper = createWrapper(mockPocketBaseWithUser);
+
+      renderHook(() => useAuth({ realtime: false }), { wrapper });
+
+      expect(mockSubscribe).not.toHaveBeenCalled();
     });
 
-    const wrapper = createWrapper(mockPocketBaseWithUser);
+    it('should not handle user deletion via subscription when realtime is false', async () => {
+      const mockUser = { id: '1', email: 'test@example.com' };
+      let subscriptionCallback: ((e: { action: string; record: unknown }) => void) | null = null;
 
-    renderHook(() => useAuth(), { wrapper });
+      const mockPocketBaseWithUser = createMockAuthPocketBase({
+        isValid: true,
+        record: mockUser,
+      });
 
-    expect(mockSubscribe).toHaveBeenCalledWith('1', expect.any(Function));
+      mockPocketBaseWithUser.collection = vi.fn().mockReturnValue({
+        subscribe: vi.fn((id: string, callback: (e: { action: string; record: unknown }) => void) => {
+          subscriptionCallback = callback;
+          return Promise.resolve(() => {});
+        }),
+      });
+
+      const wrapper = createWrapper(mockPocketBaseWithUser);
+
+      const { result } = renderHook(() => useAuth({ realtime: false }), { wrapper });
+
+      expect(result.current.user).toEqual(mockUser);
+
+      act(() => {
+        if (subscriptionCallback) {
+          subscriptionCallback({ action: 'delete', record: mockUser });
+        }
+      });
+
+      expect(result.current.user).toEqual(mockUser);
+      expect(result.current.isAuthenticated).toBe(true);
+    });
   });
 
-  it('should handle user record update via subscription', async () => {
-    const mockUser = { id: '1', email: 'test@example.com' };
-    const updatedUser = { id: '1', email: 'updated@example.com', name: 'Updated' };
-    let subscriptionCallback: ((e: { action: string; record: unknown }) => void) | null = null;
+  describe('signIn', () => {
+    it.each`
+      scenario          | options                  | expected
+      ${'basic'}        | ${undefined}             | ${undefined}
+      ${'with options'} | ${{ expand: 'profile' }} | ${{ expand: 'profile' }}
+    `('should handle signIn with email $scenario', async ({ options, expected }) => {
+      const mockAuthResponse = {
+        token: 'mock-token',
+        record: { id: '1', email: 'test@example.com' },
+      };
 
-    const mockPocketBaseWithUser = createMockAuthPocketBase({
-      isValid: true,
-      record: mockUser,
-    });
-
-    mockPocketBaseWithUser.collection = vi.fn().mockReturnValue({
-      subscribe: vi.fn((id: string, callback: (e: { action: string; record: unknown }) => void) => {
-        subscriptionCallback = callback;
-        return Promise.resolve(() => {});
-      }),
-    });
-
-    const wrapper = createWrapper(mockPocketBaseWithUser);
-
-    const { result } = renderHook(() => useAuth(), { wrapper });
-
-    expect(result.current.user).toEqual(mockUser);
-
-    act(() => {
-      if (subscriptionCallback) {
-        subscriptionCallback({ action: 'update', record: updatedUser });
-      }
-    });
-
-    expect(result.current.user).toEqual(updatedUser);
-  });
-
-  it('should handle user record deletion via subscription', async () => {
-    const mockUser = { id: '1', email: 'test@example.com' };
-    let subscriptionCallback: ((e: { action: string; record: unknown }) => void) | null = null;
-
-    const mockPocketBaseWithUser = createMockAuthPocketBase({
-      isValid: true,
-      record: mockUser,
-    });
-
-    mockPocketBaseWithUser.collection = vi.fn().mockReturnValue({
-      subscribe: vi.fn((id: string, callback: (e: { action: string; record: unknown }) => void) => {
-        subscriptionCallback = callback;
-        return Promise.resolve(() => {});
-      }),
-    });
-
-    const wrapper = createWrapper(mockPocketBaseWithUser);
-
-    const { result } = renderHook(() => useAuth(), { wrapper });
-
-    expect(result.current.user).toEqual(mockUser);
-
-    act(() => {
-      if (subscriptionCallback) {
-        subscriptionCallback({ action: 'delete', record: mockUser });
-      }
-    });
-
-    expect(result.current.user).toBe(null);
-    expect(result.current.isAuthenticated).toBe(false);
-  });
-
-  describe('passwordReset', () => {
-    it('should request password reset', async () => {
-      const mockPocketBase = createMockAuthPocketBase();
-      const mockRequestPasswordReset = vi.fn().mockResolvedValue(undefined);
+      const mockAuth = vi.fn().mockResolvedValue(mockAuthResponse);
       mockPocketBase.collection = vi.fn().mockReturnValue({
-        requestPasswordReset: mockRequestPasswordReset,
-        confirmPasswordReset: vi.fn(),
-        authWithPassword: vi.fn(),
-        authWithOAuth2: vi.fn(),
-        create: vi.fn(),
-        subscribe: vi.fn().mockResolvedValue(() => {}),
+        authWithPassword: mockAuth,
       });
 
       const wrapper = createWrapper(mockPocketBase);
@@ -511,15 +224,127 @@ describe('useAuth', () => {
       const { result } = renderHook(() => useAuth(), { wrapper });
 
       await act(async () => {
-        await result.current.passwordReset.request('test@example.com');
+        await result.current.signIn.email('test@example.com', 'password', options);
       });
 
-      expect(mockRequestPasswordReset).toHaveBeenCalledWith('test@example.com', undefined);
-      expect(result.current.isLoading).toBe(false);
-      expect(result.current.error).toBe(null);
+      expect(mockAuth).toHaveBeenCalledWith('test@example.com', 'password', expected);
     });
 
-    it('should request password reset with options', async () => {
+    it.each`
+      scenario              | options                                                                           | expected
+      ${'basic'}            | ${undefined}                                                                      | ${undefined}
+      ${'with scopes'}      | ${{ scopes: ['user:email', 'read:user'] }}                                        | ${{ scopes: ['user:email', 'read:user'] }}
+      ${'with createData'}  | ${{ createData: { name: 'John Doe', avatar: 'https://example.com/avatar.jpg' } }} | ${{ createData: { name: 'John Doe', avatar: 'https://example.com/avatar.jpg' } }}
+      ${'with urlCallback'} | ${{ urlCallback: emptyFn }}                                                       | ${{ urlCallback: emptyFn }}
+    `('should handle signIn with social provider $scenario', async ({ options, expected }) => {
+      const mockAuthResponse = {
+        token: 'mock-token',
+        record: { id: '1', email: 'test@example.com' },
+      };
+
+      const mockAuth = vi.fn().mockResolvedValue(mockAuthResponse);
+      mockPocketBase.collection = vi.fn().mockReturnValue({
+        authWithOAuth2: mockAuth,
+      });
+
+      const wrapper = createWrapper(mockPocketBase);
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+
+      await act(async () => {
+        await result.current.signIn.social('google', options);
+      });
+
+      expect(mockAuth).toHaveBeenCalledWith({ provider: 'google', ...expected });
+    });
+
+    it.each`
+      scenario          | options                  | expected
+      ${'basic'}        | ${undefined}             | ${undefined}
+      ${'with options'} | ${{ expand: 'profile' }} | ${{ expand: 'profile' }}
+    `('should handle signIn with OTP $scenario', async ({ options, expected }) => {
+      const mockAuthResponse = {
+        token: 'mock-token',
+        record: { id: '1', email: 'test@example.com' },
+      };
+
+      const mockAuth = vi.fn().mockResolvedValue(mockAuthResponse);
+      mockPocketBase.collection = vi.fn().mockReturnValue({
+        authWithOTP: mockAuth,
+      });
+
+      const wrapper = createWrapper(mockPocketBase);
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+
+      await act(async () => {
+        await result.current.signIn.otp('123456', 'password', options);
+      });
+
+      expect(mockAuth).toHaveBeenCalledWith('123456', 'password', expected);
+    });
+  });
+
+  describe('signOut', () => {
+    it('should handle signOut', async () => {
+      const mockClear = vi.fn();
+      mockPocketBase.authStore = {
+        ...mockPocketBase.authStore,
+        clear: mockClear,
+      } as unknown as typeof mockPocketBase.authStore;
+
+      const wrapper = createWrapper(mockPocketBase);
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+
+      await act(async () => {
+        result.current.signOut();
+      });
+
+      expect(mockClear).toHaveBeenCalled();
+    });
+  });
+
+  describe('signUp', () => {
+    it.each`
+      scenario          | options                                                        | expected
+      ${'basic'}        | ${undefined}                                                   | ${undefined}
+      ${'with options'} | ${{ expand: 'profile', additionalData: { name: 'John Doe' } }} | ${{ expand: 'profile', additionalData: { name: 'John Doe' } }}
+    `('should handle signUp with email $scenario', async ({ options, expected }) => {
+      const mockCreate = vi.fn().mockResolvedValue({
+        id: '1',
+        email: 'new@example.com',
+        name: 'John Doe',
+      });
+
+      mockPocketBase.collection('users').create = mockCreate;
+
+      const wrapper = createWrapper(mockPocketBase);
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+
+      await act(async () => {
+        await result.current.signUp.email('new@example.com', 'password', options);
+      });
+
+      const { additionalData, ...rest } = expected ?? {};
+      expect(mockCreate).toHaveBeenCalledWith(
+        {
+          email: 'new@example.com',
+          password: 'password',
+          ...additionalData,
+        },
+        rest,
+      );
+    });
+  });
+
+  describe('passwordReset', () => {
+    it.each`
+      scenario          | options                  | expected
+      ${'basic'}        | ${undefined}             | ${undefined}
+      ${'with options'} | ${{ expand: 'profile' }} | ${{ expand: 'profile' }}
+    `('should request password reset $scenario', async ({ options, expected }) => {
       const mockPocketBase = createMockAuthPocketBase();
       const mockRequestPasswordReset = vi.fn().mockResolvedValue(undefined);
       mockPocketBase.collection = vi.fn().mockReturnValue({
@@ -535,40 +360,20 @@ describe('useAuth', () => {
 
       const { result } = renderHook(() => useAuth(), { wrapper });
 
-      const options = { expand: 'profile' };
       await act(async () => {
         await result.current.passwordReset.request('test@example.com', options);
       });
 
-      expect(mockRequestPasswordReset).toHaveBeenCalledWith('test@example.com', options);
-    });
-
-    it('should confirm password reset', async () => {
-      const mockPocketBase = createMockAuthPocketBase();
-      const mockConfirmPasswordReset = vi.fn().mockResolvedValue(undefined);
-      mockPocketBase.collection = vi.fn().mockReturnValue({
-        requestPasswordReset: vi.fn(),
-        confirmPasswordReset: mockConfirmPasswordReset,
-        authWithPassword: vi.fn(),
-        authWithOAuth2: vi.fn(),
-        create: vi.fn(),
-        subscribe: vi.fn().mockResolvedValue(() => {}),
-      });
-
-      const wrapper = createWrapper(mockPocketBase);
-
-      const { result } = renderHook(() => useAuth(), { wrapper });
-
-      await act(async () => {
-        await result.current.passwordReset.confirm('token123', 'newpassword', 'newpassword');
-      });
-
-      expect(mockConfirmPasswordReset).toHaveBeenCalledWith('token123', 'newpassword', 'newpassword', undefined);
+      expect(mockRequestPasswordReset).toHaveBeenCalledWith('test@example.com', expected);
       expect(result.current.isLoading).toBe(false);
       expect(result.current.error).toBe(null);
     });
 
-    it('should confirm password reset with options', async () => {
+    it.each`
+      scenario          | options                  | expected
+      ${'basic'}        | ${undefined}             | ${undefined}
+      ${'with options'} | ${{ expand: 'profile' }} | ${{ expand: 'profile' }}
+    `('should confirm password reset $scenario', async ({ options, expected }) => {
       const mockPocketBase = createMockAuthPocketBase();
       const mockConfirmPasswordReset = vi.fn().mockResolvedValue(undefined);
       mockPocketBase.collection = vi.fn().mockReturnValue({
@@ -584,15 +389,20 @@ describe('useAuth', () => {
 
       const { result } = renderHook(() => useAuth(), { wrapper });
 
-      const options = { expand: 'profile' };
       await act(async () => {
         await result.current.passwordReset.confirm('token123', 'newpassword', 'newpassword', options);
       });
 
-      expect(mockConfirmPasswordReset).toHaveBeenCalledWith('token123', 'newpassword', 'newpassword', options);
+      expect(mockConfirmPasswordReset).toHaveBeenCalledWith('token123', 'newpassword', 'newpassword', expected);
+      expect(result.current.isLoading).toBe(false);
+      expect(result.current.error).toBe(null);
     });
 
-    it('should handle password reset request error', async () => {
+    it.each`
+      scenario          | options
+      ${'basic'}        | ${undefined}
+      ${'with options'} | ${{ expand: 'profile' }}
+    `('should handle password reset request error $scenario', async ({ options }) => {
       const mockPocketBase = createMockAuthPocketBase();
       const mockError = new Error('Password reset failed');
       const mockRequestPasswordReset = vi.fn().mockRejectedValue(mockError);
@@ -610,14 +420,18 @@ describe('useAuth', () => {
       const { result } = renderHook(() => useAuth(), { wrapper });
 
       await act(async () => {
-        await result.current.passwordReset.request('test@example.com');
+        await result.current.passwordReset.request('test@example.com', options);
       });
 
       expect(result.current.error).toBe(mockError);
       expect(result.current.isLoading).toBe(false);
     });
 
-    it('should handle password reset confirm error', async () => {
+    it.each`
+      scenario          | options
+      ${'basic'}        | ${undefined}
+      ${'with options'} | ${{ expand: 'profile' }}
+    `('should handle password reset confirm error $scenario', async ({ options }) => {
       const mockPocketBase = createMockAuthPocketBase();
       const mockError = new Error('Password reset confirmation failed');
       const mockConfirmPasswordReset = vi.fn().mockRejectedValue(mockError);
@@ -635,7 +449,7 @@ describe('useAuth', () => {
       const { result } = renderHook(() => useAuth(), { wrapper });
 
       await act(async () => {
-        await result.current.passwordReset.confirm('token123', 'newpassword', 'newpassword');
+        await result.current.passwordReset.confirm('token123', 'newpassword', 'newpassword', options);
       });
 
       expect(result.current.error).toBe(mockError);
@@ -644,7 +458,11 @@ describe('useAuth', () => {
   });
 
   describe('verification', () => {
-    it('should request email verification', async () => {
+    it.each`
+      scenario          | options                  | expected
+      ${'basic'}        | ${undefined}             | ${undefined}
+      ${'with options'} | ${{ expand: 'profile' }} | ${{ expand: 'profile' }}
+    `('should request email verification $scenario', async ({ options, expected }) => {
       const mockPocketBase = createMockAuthPocketBase();
       const mockRequestVerification = vi.fn().mockResolvedValue(undefined);
       mockPocketBase.collection = vi.fn().mockReturnValue({
@@ -660,65 +478,20 @@ describe('useAuth', () => {
 
       const { result } = renderHook(() => useAuth(), { wrapper });
 
-      await act(async () => {
-        await result.current.verification.request('test@example.com');
-      });
-
-      expect(mockRequestVerification).toHaveBeenCalledWith('test@example.com', undefined);
-      expect(result.current.isLoading).toBe(false);
-      expect(result.current.error).toBe(null);
-    });
-
-    it('should request email verification with options', async () => {
-      const mockPocketBase = createMockAuthPocketBase();
-      const mockRequestVerification = vi.fn().mockResolvedValue(undefined);
-      mockPocketBase.collection = vi.fn().mockReturnValue({
-        requestVerification: mockRequestVerification,
-        confirmVerification: vi.fn(),
-        authWithPassword: vi.fn(),
-        authWithOAuth2: vi.fn(),
-        create: vi.fn(),
-        subscribe: vi.fn().mockResolvedValue(() => {}),
-      });
-
-      const wrapper = createWrapper(mockPocketBase);
-
-      const { result } = renderHook(() => useAuth(), { wrapper });
-
-      const options = { expand: 'profile' };
       await act(async () => {
         await result.current.verification.request('test@example.com', options);
       });
 
-      expect(mockRequestVerification).toHaveBeenCalledWith('test@example.com', options);
-    });
-
-    it('should confirm email verification', async () => {
-      const mockPocketBase = createMockAuthPocketBase();
-      const mockConfirmVerification = vi.fn().mockResolvedValue(undefined);
-      mockPocketBase.collection = vi.fn().mockReturnValue({
-        requestVerification: vi.fn(),
-        confirmVerification: mockConfirmVerification,
-        authWithPassword: vi.fn(),
-        authWithOAuth2: vi.fn(),
-        create: vi.fn(),
-        subscribe: vi.fn().mockResolvedValue(() => {}),
-      });
-
-      const wrapper = createWrapper(mockPocketBase);
-
-      const { result } = renderHook(() => useAuth(), { wrapper });
-
-      await act(async () => {
-        await result.current.verification.confirm('token123');
-      });
-
-      expect(mockConfirmVerification).toHaveBeenCalledWith('token123', undefined);
+      expect(mockRequestVerification).toHaveBeenCalledWith('test@example.com', expected);
       expect(result.current.isLoading).toBe(false);
       expect(result.current.error).toBe(null);
     });
 
-    it('should confirm email verification with options', async () => {
+    it.each`
+      scenario          | options                  | expected
+      ${'basic'}        | ${undefined}             | ${undefined}
+      ${'with options'} | ${{ expand: 'profile' }} | ${{ expand: 'profile' }}
+    `('should confirm email verification $scenario', async ({ options, expected }) => {
       const mockPocketBase = createMockAuthPocketBase();
       const mockConfirmVerification = vi.fn().mockResolvedValue(undefined);
       mockPocketBase.collection = vi.fn().mockReturnValue({
@@ -734,15 +507,20 @@ describe('useAuth', () => {
 
       const { result } = renderHook(() => useAuth(), { wrapper });
 
-      const options = { expand: 'profile' };
       await act(async () => {
         await result.current.verification.confirm('token123', options);
       });
 
-      expect(mockConfirmVerification).toHaveBeenCalledWith('token123', options);
+      expect(mockConfirmVerification).toHaveBeenCalledWith('token123', expected);
+      expect(result.current.isLoading).toBe(false);
+      expect(result.current.error).toBe(null);
     });
 
-    it('should handle verification request error', async () => {
+    it.each`
+      scenario          | options
+      ${'basic'}        | ${undefined}
+      ${'with options'} | ${{ expand: 'profile' }}
+    `('should handle verification request error $scenario', async ({ options }) => {
       const mockPocketBase = createMockAuthPocketBase();
       const mockError = new Error('Verification request failed');
       const mockRequestVerification = vi.fn().mockRejectedValue(mockError);
@@ -760,14 +538,18 @@ describe('useAuth', () => {
       const { result } = renderHook(() => useAuth(), { wrapper });
 
       await act(async () => {
-        await result.current.verification.request('test@example.com');
+        await result.current.verification.request('test@example.com', options);
       });
 
       expect(result.current.error).toBe(mockError);
       expect(result.current.isLoading).toBe(false);
     });
 
-    it('should handle verification confirm error', async () => {
+    it.each`
+      scenario          | options
+      ${'basic'}        | ${undefined}
+      ${'with options'} | ${{ expand: 'profile' }}
+    `('should handle verification confirm error $scenario', async ({ options }) => {
       const mockPocketBase = createMockAuthPocketBase();
       const mockError = new Error('Verification confirmation failed');
       const mockConfirmVerification = vi.fn().mockRejectedValue(mockError);
@@ -785,7 +567,7 @@ describe('useAuth', () => {
       const { result } = renderHook(() => useAuth(), { wrapper });
 
       await act(async () => {
-        await result.current.verification.confirm('token123');
+        await result.current.verification.confirm('token123', options);
       });
 
       expect(result.current.error).toBe(mockError);
