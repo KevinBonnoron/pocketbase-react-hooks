@@ -33,6 +33,7 @@
     "version:alpha": "node scripts/version.js alpha",
     "version:beta": "node scripts/version.js beta",
     "version:rc": "node scripts/version.js rc",
+    "version:stable": "node scripts/version.js stable",
     "jsr:publish": "bunx jsr publish",
     "jsr:publish:dry-run": "bunx jsr publish --dry-run",
     "prepare": "bunx lefthook install"

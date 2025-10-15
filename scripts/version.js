@@ -3,25 +3,19 @@
 const { execSync } = require('child_process');
 const { readFileSync, writeFileSync } = require('fs');
 
-const versionType = process.argv[2];
+const args = process.argv.slice(2);
+const versionType = args[0];
+const isDryRun = args.includes('--dry-run');
 
 if (!versionType) {
-  console.error('❌ Usage: node version.js <patch|minor|major|alpha|beta|rc>');
+  console.error('❌ Usage: node version.js <patch|minor|major|alpha|beta|rc|stable> [--dry-run]');
   process.exit(1);
 }
 
-const validTypes = ['patch', 'minor', 'major', 'alpha', 'beta', 'rc'];
+const validTypes = ['patch', 'minor', 'major', 'alpha', 'beta', 'rc', 'stable'];
 if (!validTypes.includes(versionType)) {
   console.error(`❌ Invalid version type. Must be one of: ${validTypes.join(', ')}`);
   process.exit(1);
-}
-
-// Build npm version command
-let npmCommand = 'npm version';
-if (['alpha', 'beta', 'rc'].includes(versionType)) {
-  npmCommand += ` prerelease --preid=${versionType}`;
-} else {
-  npmCommand += ` ${versionType}`;
 }
 
 // Read current package.json to calculate new version
@@ -42,6 +36,16 @@ switch (versionType) {
   case 'major':
     newVersion = `${major + 1}.0.0`;
     break;
+  case 'stable':
+    // Remove prerelease suffix to get stable version
+    const stableMatch = currentVersion.match(/^(\d+\.\d+\.\d+)(?:-\w+\.\d+)?$/);
+    if (stableMatch) {
+      newVersion = stableMatch[1];
+    } else {
+      console.error('❌ Current version is not a prerelease version');
+      process.exit(1);
+    }
+    break;
   case 'alpha':
   case 'beta':
   case 'rc':
@@ -58,6 +62,19 @@ switch (versionType) {
       newVersion = `${major}.${minor}.${patch + 1}-${versionType}.0`;
     }
     break;
+}
+
+if (isDryRun) {
+  console.log(`🔍 DRY RUN: Would update version from ${currentVersion} to ${newVersion}`);
+  console.log('📝 Files that would be modified:');
+  console.log('  - package.json');
+  console.log('  - jsr.json');
+  console.log('🏷️  Git operations that would be performed:');
+  console.log('  - git add package.json jsr.json');
+  console.log(`  - git commit -m "chore: bump version to ${newVersion}"`);
+  console.log(`  - git tag v${newVersion}`);
+  console.log('✅ No changes were made (dry run mode)');
+  process.exit(0);
 }
 
 console.log(`🔄 Updating version from ${currentVersion} to ${newVersion}`);
