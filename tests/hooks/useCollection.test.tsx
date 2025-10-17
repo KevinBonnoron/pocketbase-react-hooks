@@ -625,4 +625,250 @@ describe('useCollection', () => {
       expect(mockSubscribe).toHaveBeenCalled();
     });
   });
+
+  describe('transformers', () => {
+    it('should apply default dateTransformer to created and updated fields', async () => {
+      const mockData = [
+        {
+          id: '1',
+          title: 'Test 1',
+          collectionId: 'test',
+          collectionName: 'test',
+          created: '2024-01-01T10:00:00.123Z',
+          updated: '2024-01-01T11:00:00.456Z',
+        },
+      ];
+
+      mockGetFullList.mockResolvedValue(mockData);
+
+      const wrapper = createWrapper(mockPocketBase);
+
+      const { result } = renderHook(() => useCollection('test'), { wrapper });
+
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+
+      expect(result.current.data?.[0]?.created).toBeInstanceOf(Date);
+      expect(result.current.data?.[0]?.updated).toBeInstanceOf(Date);
+      expect((result.current.data?.[0]?.created as Date).toISOString()).toBe('2024-01-01T10:00:00.123Z');
+      expect((result.current.data?.[0]?.updated as Date).toISOString()).toBe('2024-01-01T11:00:00.456Z');
+    });
+
+    it('should apply transformers to fetched data', async () => {
+      const mockData = [
+        {
+          id: '1',
+          title: 'Test 1',
+          collectionId: 'test',
+          collectionName: 'test',
+          created: '2024-01-01T10:00:00Z',
+          updated: '2024-01-01T11:00:00Z',
+        },
+      ];
+
+      mockGetFullList.mockResolvedValue(mockData);
+
+      const customTransformer = (record: any) => ({
+        ...record,
+        title: record.title.toUpperCase(),
+      });
+
+      const wrapper = createWrapper(mockPocketBase);
+
+      const { result } = renderHook(
+        () =>
+          useCollection('test', {
+            transformers: [customTransformer],
+          }),
+        { wrapper },
+      );
+
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+
+      expect(result.current.data).toEqual([
+        {
+          id: '1',
+          title: 'TEST 1',
+          collectionId: 'test',
+          collectionName: 'test',
+          created: '2024-01-01T10:00:00Z',
+          updated: '2024-01-01T11:00:00Z',
+        },
+      ]);
+    });
+
+    it('should apply transformers to real-time create events', async () => {
+      const initialData = [{ id: '1', title: 'Test 1', collectionId: 'test', collectionName: 'test' }];
+      const newRecord = { id: '2', title: 'Test 2', collectionId: 'test', collectionName: 'test' };
+
+      mockGetFullList.mockResolvedValue(initialData);
+
+      let subscriptionCallback: (event: { action: string; record: RecordModel }) => void;
+      mockSubscribe.mockImplementation((_pattern: string, callback: (event: { action: string; record: RecordModel }) => void) => {
+        subscriptionCallback = callback;
+        return Promise.resolve(() => {});
+      });
+
+      const customTransformer = (record: any) => ({
+        ...record,
+        title: record.title.toUpperCase(),
+      });
+
+      const wrapper = createWrapper(mockPocketBase);
+
+      const { result } = renderHook(
+        () =>
+          useCollection('test', {
+            transformers: [customTransformer],
+          }),
+        { wrapper },
+      );
+
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+
+      await act(async () => {
+        subscriptionCallback({
+          action: 'create',
+          record: newRecord,
+        });
+      });
+
+      expect(result.current.data).toEqual([
+        { id: '1', title: 'TEST 1', collectionId: 'test', collectionName: 'test' },
+        { id: '2', title: 'TEST 2', collectionId: 'test', collectionName: 'test' },
+      ]);
+    });
+
+    it('should apply transformers to real-time update events', async () => {
+      const initialData = [
+        { id: '1', title: 'Test 1', collectionId: 'test', collectionName: 'test' },
+        { id: '2', title: 'Test 2', collectionId: 'test', collectionName: 'test' },
+      ];
+      const updatedRecord = { id: '1', title: 'Updated Test 1', collectionId: 'test', collectionName: 'test' };
+
+      mockGetFullList.mockResolvedValue(initialData);
+
+      let subscriptionCallback: (event: { action: string; record: RecordModel }) => void;
+      mockSubscribe.mockImplementation((_pattern: string, callback: (event: { action: string; record: RecordModel }) => void) => {
+        subscriptionCallback = callback;
+        return Promise.resolve(() => {});
+      });
+
+      const customTransformer = (record: any) => ({
+        ...record,
+        title: record.title.toUpperCase(),
+      });
+
+      const wrapper = createWrapper(mockPocketBase);
+
+      const { result } = renderHook(
+        () =>
+          useCollection('test', {
+            transformers: [customTransformer],
+          }),
+        { wrapper },
+      );
+
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+
+      await act(async () => {
+        subscriptionCallback({
+          action: 'update',
+          record: updatedRecord,
+        });
+      });
+
+      expect(result.current.data).toEqual([
+        { id: '1', title: 'UPDATED TEST 1', collectionId: 'test', collectionName: 'test' },
+        { id: '2', title: 'TEST 2', collectionId: 'test', collectionName: 'test' },
+      ]);
+    });
+
+    it('should handle transformer errors gracefully', async () => {
+      const mockData = [{ id: '1', title: 'Test 1', collectionId: 'test', collectionName: 'test' }];
+
+      // Mock getFullList to return data without transformers applied
+      mockGetFullList.mockResolvedValue(mockData);
+
+      let subscriptionCallback: (event: { action: string; record: RecordModel }) => void;
+      mockSubscribe.mockImplementation((_pattern: string, callback: (event: { action: string; record: RecordModel }) => void) => {
+        subscriptionCallback = callback;
+        return Promise.resolve(() => {});
+      });
+
+      const faultyTransformer = (record: any) => {
+        throw new Error('Transformer error');
+      };
+
+      const wrapper = createWrapper(mockPocketBase);
+
+      const { result } = renderHook(
+        () =>
+          useCollection('test', {
+            transformers: [faultyTransformer],
+          }),
+        { wrapper },
+      );
+
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+
+      // The initial data should be returned without transformation when transformer fails
+      expect(result.current.data).toEqual([{ id: '1', title: 'Test 1', collectionId: 'test', collectionName: 'test' }]);
+      expect(result.current.isError).toBe(false);
+
+      await act(async () => {
+        subscriptionCallback({
+          action: 'create',
+          record: { id: '2', title: 'Test 2', collectionId: 'test', collectionName: 'test' },
+        });
+      });
+
+      // Should fallback to original record when transformer fails in real-time
+      expect(result.current.data).toEqual([
+        { id: '1', title: 'Test 1', collectionId: 'test', collectionName: 'test' },
+        { id: '2', title: 'Test 2', collectionId: 'test', collectionName: 'test' },
+      ]);
+    });
+
+    it('should apply multiple transformers in sequence', async () => {
+      const mockData = [{ id: '1', title: 'test', collectionId: 'test', collectionName: 'test' }];
+
+      mockGetFullList.mockResolvedValue(mockData);
+
+      const transformer1 = (record: any) => ({
+        ...record,
+        title: record.title.toUpperCase(),
+      });
+
+      const transformer2 = (record: any) => ({
+        ...record,
+        title: record.title + '!',
+      });
+
+      const wrapper = createWrapper(mockPocketBase);
+
+      const { result } = renderHook(
+        () =>
+          useCollection('test', {
+            transformers: [transformer1, transformer2],
+          }),
+        { wrapper },
+      );
+
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+
+      expect(result.current.data).toEqual([{ id: '1', title: 'TEST!', collectionId: 'test', collectionName: 'test' }]);
+    });
+  });
 });

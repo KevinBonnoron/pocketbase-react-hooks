@@ -1,5 +1,7 @@
 import type { RecordModel } from 'pocketbase';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { applyTransformers } from '../lib/utils';
+import { dateTransformer } from '../transformers';
 import type { UseRecordOptions, UseRecordResult } from '../types';
 import { useQueryState } from './internal/useQueryState';
 import { usePocketBase } from './usePocketBase';
@@ -42,19 +44,22 @@ export function useRecord<Record extends RecordModel>(collectionName: string, re
     initialLoading: !!recordIdOrFilter,
   });
 
+  const transformers = useRef(options.transformers ?? [dateTransformer<Record>()]);
+  transformers.current = options.transformers ?? [dateTransformer<Record>()];
+
   const fetcher = useCallback(async (): Promise<Record> => {
     if (!recordIdOrFilter) {
       throw new Error('Record ID or filter is required');
     }
 
     if (isId) {
-      return await recordService.getOne(recordIdOrFilter, {
+      return await recordService.getOne<Record>(recordIdOrFilter, {
         ...(expand && { expand }),
         ...(fields && { fields }),
         ...(requestKey && { requestKey }),
       });
     } else {
-      return await recordService.getFirstListItem(recordIdOrFilter, {
+      return await recordService.getFirstListItem<Record>(recordIdOrFilter, {
         ...(expand && { expand }),
         ...(fields && { fields }),
         ...(requestKey && { requestKey }),
@@ -68,22 +73,25 @@ export function useRecord<Record extends RecordModel>(collectionName: string, re
       return;
     }
 
-    return queryState.executeFetch(fetcher, 'Failed to fetch record');
+    return queryState.executeFetch(async () => {
+      const record = await fetcher();
+      return applyTransformers(record, transformers.current);
+    }, 'Failed to fetch record');
   }, [recordIdOrFilter, fetcher, queryState.reset, queryState.executeFetch]);
 
   useEffect(() => {
-    if (!recordIdOrFilter || !queryState.data) return;
+    if (!recordIdOrFilter) return;
 
     if (isId) {
-      const unsubscribe = recordService.subscribe(
+      const unsubscribe = recordService.subscribe<Record>(
         recordIdOrFilter,
         (e) => {
           switch (e.action) {
             case 'update':
-              queryState.setData(e.record as Record);
+              queryState.setData(() => applyTransformers(e.record, transformers.current));
               break;
             case 'delete':
-              queryState.setData(null);
+              queryState.setData(() => null);
               break;
           }
         },
@@ -97,18 +105,16 @@ export function useRecord<Record extends RecordModel>(collectionName: string, re
         unsubscribe.then((unsub) => unsub());
       };
     } else {
-      const unsubscribe = recordService.subscribe(
+      const unsubscribe = recordService.subscribe<Record>(
         '*',
         (e) => {
           switch (e.action) {
             case 'create':
             case 'update':
-              queryState.setData(e.record as Record);
+              queryState.setData(() => applyTransformers(e.record, transformers.current));
               break;
             case 'delete':
-              if (queryState.data && e.record.id === queryState.data.id) {
-                queryState.setData(null);
-              }
+              queryState.setData((current) => (current && current.id === e.record.id ? null : current));
               break;
           }
         },
@@ -123,7 +129,7 @@ export function useRecord<Record extends RecordModel>(collectionName: string, re
         unsubscribe.then((unsub) => unsub());
       };
     }
-  }, [recordService, recordIdOrFilter, expand, isId, queryState.data, queryState.setData, requestKey]);
+  }, [recordService, recordIdOrFilter, expand, isId, queryState.setData, requestKey]);
 
   return queryState.result;
 }

@@ -30,18 +30,4 @@ export default defineConfig({
     },
     sourcemap: true,
   },
-  test: {
-    environment: 'jsdom',
-    globals: true,
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html'],
-      exclude: ['node_modules/', 'dist/', 'tests/', 'examples/', 'scripts/', '**/index.ts', '**/*.type.ts', '**/*.d.ts', '**/*.config.*', '**/coverage/**'],
-    },
-    onConsoleLog(_log, type) {
-      if (type === 'stderr') {
-        return false;
-      }
-    },
-  },
 });

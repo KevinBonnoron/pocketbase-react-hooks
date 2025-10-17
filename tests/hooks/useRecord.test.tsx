@@ -276,6 +276,271 @@ describe('useRecord', () => {
     expect(result.current.data).toEqual(initialRecord);
   });
 
+  describe('transformers', () => {
+    it('should apply default dateTransformer to created and updated fields', async () => {
+      const mockRecord: RecordModel = {
+        id: '1',
+        title: 'Test Record',
+        collectionId: 'test',
+        collectionName: 'test',
+        created: '2024-01-01T10:00:00.123Z',
+        updated: '2024-01-01T11:00:00.456Z',
+      };
+      mockGetOne.mockResolvedValue(mockRecord);
+
+      const wrapper = createWrapper(mockPocketBase);
+
+      const { result } = renderHook(() => useRecord('test', '1'), { wrapper });
+
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+
+      expect(result.current.data?.created).toBeInstanceOf(Date);
+      expect(result.current.data?.updated).toBeInstanceOf(Date);
+      expect((result.current.data?.created as Date).toISOString()).toBe('2024-01-01T10:00:00.123Z');
+      expect((result.current.data?.updated as Date).toISOString()).toBe('2024-01-01T11:00:00.456Z');
+    });
+
+    it('should apply transformers to fetched data', async () => {
+      const mockRecord: RecordModel = {
+        id: '1',
+        title: 'Test Record',
+        collectionId: 'test',
+        collectionName: 'test',
+        created: '2021-01-01T00:00:00.000Z',
+        updated: '2021-01-01T00:00:00.000Z',
+      };
+      mockGetOne.mockResolvedValue(mockRecord);
+
+      const customTransformer = (record: RecordModel) => ({
+        ...record,
+        title: record.title.toUpperCase(),
+      });
+
+      const wrapper = createWrapper(mockPocketBase);
+
+      const { result } = renderHook(
+        () =>
+          useRecord('test', '1', {
+            transformers: [customTransformer],
+          }),
+        { wrapper },
+      );
+
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+
+      expect(result.current.data).toEqual({
+        ...mockRecord,
+        title: 'TEST RECORD',
+      });
+    });
+
+    it('should apply transformers to real-time update events (by ID)', async () => {
+      const initialRecord: RecordModel = {
+        id: '1',
+        title: 'Test Record',
+        collectionId: 'test',
+        collectionName: 'test',
+      };
+      const updatedRecord: RecordModel = {
+        id: '1',
+        title: 'Updated Record',
+        collectionId: 'test',
+        collectionName: 'test',
+      };
+
+      mockGetOne.mockResolvedValue(initialRecord);
+
+      let subscriptionCallback: (event: { action: string; record: RecordModel }) => void;
+      mockSubscribe.mockImplementation((_pattern: string, callback: (event: { action: string; record: RecordModel }) => void) => {
+        subscriptionCallback = callback;
+        return Promise.resolve(() => {});
+      });
+
+      const customTransformer = (record: RecordModel) => ({
+        ...record,
+        title: record.title.toUpperCase(),
+      });
+
+      const wrapper = createWrapper(mockPocketBase);
+
+      const { result } = renderHook(
+        () =>
+          useRecord('test', '1', {
+            transformers: [customTransformer],
+          }),
+        { wrapper },
+      );
+
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+
+      await act(async () => {
+        subscriptionCallback({
+          action: 'update',
+          record: updatedRecord,
+        });
+      });
+
+      expect(result.current.data).toEqual({
+        ...updatedRecord,
+        title: 'UPDATED RECORD',
+      });
+    });
+
+    it('should apply transformers to real-time update events (by filter)', async () => {
+      const initialRecord: RecordModel = {
+        id: '1',
+        title: 'Test Record',
+        collectionId: 'test',
+        collectionName: 'test',
+      };
+      const updatedRecord: RecordModel = {
+        id: '1',
+        title: 'Updated Record',
+        collectionId: 'test',
+        collectionName: 'test',
+      };
+
+      mockGetFirstListItem.mockResolvedValue(initialRecord);
+
+      let subscriptionCallback: (event: { action: string; record: RecordModel }) => void;
+      mockSubscribe.mockImplementation((_pattern: string, callback: (event: { action: string; record: RecordModel }) => void) => {
+        subscriptionCallback = callback;
+        return Promise.resolve(() => {});
+      });
+
+      const customTransformer = (record: RecordModel) => ({
+        ...record,
+        title: record.title.toUpperCase(),
+      });
+
+      const wrapper = createWrapper(mockPocketBase);
+
+      const { result } = renderHook(
+        () =>
+          useRecord('test', 'title = "Test Record"', {
+            transformers: [customTransformer],
+          }),
+        { wrapper },
+      );
+
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+
+      await act(async () => {
+        subscriptionCallback({
+          action: 'update',
+          record: updatedRecord,
+        });
+      });
+
+      expect(result.current.data).toEqual({
+        ...updatedRecord,
+        title: 'UPDATED RECORD',
+      });
+    });
+
+    it('should handle transformer errors gracefully', async () => {
+      const mockRecord: RecordModel = {
+        id: '1',
+        title: 'Test Record',
+        collectionId: 'test',
+        collectionName: 'test',
+      };
+
+      mockGetOne.mockResolvedValue(mockRecord);
+
+      let subscriptionCallback: (event: { action: string; record: RecordModel }) => void;
+      mockSubscribe.mockImplementation((_pattern: string, callback: (event: { action: string; record: RecordModel }) => void) => {
+        subscriptionCallback = callback;
+        return Promise.resolve(() => {});
+      });
+
+      const faultyTransformer = (record: RecordModel) => {
+        throw new Error('Transformer error');
+      };
+
+      const wrapper = createWrapper(mockPocketBase);
+
+      const { result } = renderHook(
+        () =>
+          useRecord('test', '1', {
+            transformers: [faultyTransformer],
+          }),
+        { wrapper },
+      );
+
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+
+      // The initial data should be returned without transformation when transformer fails
+      expect(result.current.data).toEqual(mockRecord);
+      expect(result.current.isError).toBe(false);
+
+      await act(async () => {
+        subscriptionCallback({
+          action: 'update',
+          record: { id: '1', title: 'Updated Record', collectionId: 'test', collectionName: 'test' },
+        });
+      });
+
+      // Should fallback to original record when transformer fails in real-time
+      expect(result.current.data).toEqual({
+        id: '1',
+        title: 'Updated Record',
+        collectionId: 'test',
+        collectionName: 'test',
+      });
+    });
+
+    it('should apply multiple transformers in sequence', async () => {
+      const mockRecord: RecordModel = {
+        id: '1',
+        title: 'test',
+        collectionId: 'test',
+        collectionName: 'test',
+      };
+
+      mockGetOne.mockResolvedValue(mockRecord);
+
+      const transformer1 = (record: RecordModel) => ({
+        ...record,
+        title: record.title.toUpperCase(),
+      });
+
+      const transformer2 = (record: RecordModel) => ({
+        ...record,
+        title: record.title + '!',
+      });
+
+      const wrapper = createWrapper(mockPocketBase);
+
+      const { result } = renderHook(
+        () =>
+          useRecord('test', '1', {
+            transformers: [transformer1, transformer2],
+          }),
+        { wrapper },
+      );
+
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+
+      expect(result.current.data).toEqual({
+        ...mockRecord,
+        title: 'TEST!',
+      });
+    });
+  });
+
   it('should throw error when used outside provider', () => {
     expect(() => {
       renderHook(() => useRecord('test', '1'));

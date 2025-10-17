@@ -45,11 +45,17 @@ This pattern follows TanStack Query conventions with `isLoading`, `isSuccess`, `
 
 **Request Cancellation**: The `requestKey` parameter is passed directly to PocketBase SDK and can be used with `pb.cancelRequest(key)` to abort pending requests. Useful for handling search queries, preventing race conditions, or cleaning up on unmount.
 
+**Data Transformers**: Both `useCollection` and `useRecord` support a `transformers` option that accepts an array of `RecordTransformer<T>` functions. Transformers are applied sequentially (via `reduce()`) to transform records before they're returned to components. By default, both hooks automatically apply `dateTransformer()` which converts `created` and `updated` fields from ISO strings to `Date` objects. Transformers are applied to:
+- Initial fetch results
+- Real-time subscription events (create, update)
+
+Error handling: If a transformer throws, `applyTransformers()` catches the error, logs to console, and returns the original record. Transformers use `useRef` to maintain stable references and avoid re-creating subscriptions.
+
 ### Hook Architecture
 
-**useCollection**: Fetches collection data with `getFullList()` or `getList()` based on `fetchAll` option. Handles real-time updates by applying create/update/delete actions to the current data array and re-sorting if needed.
+**useCollection**: Fetches collection data with `getFullList()` or `getList()` based on `fetchAll` option. Handles real-time updates by applying create/update/delete actions to the current data array and re-sorting if needed. Applies transformers to all records (both initial fetch and real-time updates).
 
-**useRecord**: Fetches a single record by ID using `getOne()` or by filter using `getFirstListItem()`. Subscribes to that specific record's changes.
+**useRecord**: Fetches a single record by ID using `getOne()` or by filter using `getFirstListItem()`. Subscribes to that specific record's changes. Applies transformers to the record (both initial fetch and real-time updates).
 
 **useAuth**: Manages authentication state by listening to `pb.authStore.onChange()`. Provides `signIn.email()`, `signIn.social()`, `signUp.email()`, and `signOut()` methods. Returns the authenticated user via `pb.authStore.model`.
 
@@ -66,7 +72,8 @@ This pattern follows TanStack Query conventions with `isLoading`, `isSuccess`, `
 - `src/context/PocketBaseContext.tsx` - React Context definition and `usePocketBaseContext()` hook
 - `src/providers/PocketBaseProvider.tsx` - Provider component that wraps the app
 - `src/hooks/` - All custom hooks (`useAuth`, `useCollection`, `useRecord`, `useCreateMutation`, `useUpdateMutation`, `useDeleteMutation`, `usePocketBase`)
-- `src/lib/utils.ts` - Shared utilities (`createQueryResult`, `sortRecords`)
+- `src/lib/utils.ts` - Shared utilities (`sortRecords`, `applyTransformers`)
+- `src/transformers/` - Built-in transformers (`dateTransformer`)
 - `src/types/index.ts` - TypeScript type definitions for hook options and results
 - `tests/hooks/` - Test files mirroring the hooks structure
 
@@ -135,4 +142,5 @@ This pattern follows TanStack Query conventions with `isLoading`, `isSuccess`, `
 - **Conditional Fetching**: Use `enabled: false` to disable data fetching (similar to TanStack Query)
 - **Error Handling**: All hooks expose `isError` and `error` for graceful error states
 - **Request Cancellation**: Use `requestKey` option in `useCollection` and `useRecord` to enable request cancellation via `pb.cancelRequest(key)`
+- **Data Transformers**: By default, `useCollection` and `useRecord` apply `dateTransformer()` to convert `created` and `updated` fields to `Date` objects. Users can provide custom transformers via the `transformers` option or disable all transformations with `transformers: []`. Transformers are stored in `useRef` to maintain stable references and prevent re-renders.
 - **React StrictMode**: The library handles React StrictMode's double-mounting correctly with cancellation flags to prevent auto-cancelled requests from updating state. If you encounter infinite loops or auto-cancellation issues, ensure dependencies are stable (use `useRef` for objects/arrays passed as options)

@@ -7,7 +7,7 @@ import type { UseCommonOptions } from './useCommon.type';
  *
  * @template T - The record type extending RecordModel
  */
-export interface UseCollectionOptions<T extends RecordModel> extends UseCommonOptions {
+export interface UseCollectionOptions<T extends RecordModel> extends UseCommonOptions<T> {
   /**
    * PocketBase filter query (e.g., 'published = true')
    */
