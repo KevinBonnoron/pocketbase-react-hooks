@@ -32,7 +32,7 @@ import { usePocketBase } from './usePocketBase';
  * ```
  */
 export function useCollection<Record extends RecordModel>(collectionName: string, options: UseCollectionOptions<Record> = {}): UseCollectionResult<Record> {
-  const { enabled = true, page, perPage, filter, sort, expand, fields, defaultValue, fetchAll = true, subscribe = true, requestKey } = options;
+  const { enabled = true, page, perPage, filter, sort, expand, fields, defaultValue, fetchAll = true, realtime = true, requestKey } = options;
 
   const pb = usePocketBase();
   const recordService = useMemo(() => pb.collection(collectionName), [pb, collectionName]);
@@ -79,7 +79,7 @@ export function useCollection<Record extends RecordModel>(collectionName: string
   }, [enabled, recordService, page, perPage, filter, sort, expand, fields, fetchAll, requestKey, queryState.reset, queryState.executeFetch]);
 
   useEffect(() => {
-    if (!enabled || !subscribe) return;
+    if (!enabled || !realtime) return;
 
     const unsubscribe = recordService.subscribe<Record>(
       '*',
@@ -131,7 +131,7 @@ export function useCollection<Record extends RecordModel>(collectionName: string
     return () => {
       unsubscribe.then((unsub) => unsub());
     };
-  }, [enabled, subscribe, recordService, expand, filter, sort, requestKey, queryState.setData]);
+  }, [enabled, realtime, recordService, expand, filter, sort, requestKey, queryState.setData]);
 
   return queryState.result;
 }

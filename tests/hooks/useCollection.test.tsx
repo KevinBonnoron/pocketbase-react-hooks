@@ -1,8 +1,8 @@
-import '@testing-library/jest-dom';
+import '@testing-library/jest-dom/vitest';
 import { act, renderHook } from '@testing-library/react';
 import type PocketBase from 'pocketbase';
 import type { RecordModel } from 'pocketbase';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useCollection } from '../../src/hooks/useCollection';
 import { createMockPocketBase, createWrapper, getMockCollectionMethods } from '../test-utils';
 
@@ -552,14 +552,14 @@ describe('useCollection', () => {
     });
   });
 
-  describe('subscribe option', () => {
-    it('should subscribe to real-time updates when subscribe is true (default)', async () => {
+  describe('realtime option', () => {
+    it('should subscribe to real-time updates when realtime is true (default)', async () => {
       const mockData = [{ id: '1', title: 'Test', collectionId: 'test', collectionName: 'test' }];
       mockGetFullList.mockResolvedValue(mockData);
 
       const wrapper = createWrapper(mockPocketBase);
 
-      renderHook(() => useCollection('test', { subscribe: true }), { wrapper });
+      renderHook(() => useCollection('test', { realtime: true }), { wrapper });
 
       await act(async () => {
         await new Promise((resolve) => setTimeout(resolve, 0));
@@ -571,13 +571,13 @@ describe('useCollection', () => {
       });
     });
 
-    it('should not subscribe to real-time updates when subscribe is false', async () => {
+    it('should not subscribe to real-time updates when realtime is false', async () => {
       const mockData = [{ id: '1', title: 'Test', collectionId: 'test', collectionName: 'test' }];
       mockGetFullList.mockResolvedValue(mockData);
 
       const wrapper = createWrapper(mockPocketBase);
 
-      renderHook(() => useCollection('test', { subscribe: false }), { wrapper });
+      renderHook(() => useCollection('test', { realtime: false }), { wrapper });
 
       await act(async () => {
         await new Promise((resolve) => setTimeout(resolve, 0));
@@ -586,10 +586,10 @@ describe('useCollection', () => {
       expect(mockSubscribe).not.toHaveBeenCalled();
     });
 
-    it('should not subscribe when both enabled and subscribe are false', async () => {
+    it('should not subscribe when both enabled and realtime are false', async () => {
       const wrapper = createWrapper(mockPocketBase);
 
-      renderHook(() => useCollection('test', { enabled: false, subscribe: false }), { wrapper });
+      renderHook(() => useCollection('test', { enabled: false, realtime: false }), { wrapper });
 
       await act(async () => {
         await new Promise((resolve) => setTimeout(resolve, 0));
@@ -599,15 +599,15 @@ describe('useCollection', () => {
       expect(mockGetFullList).not.toHaveBeenCalled();
     });
 
-    it('should subscribe when enabled is true but subscribe is false initially, then subscribe becomes true', async () => {
+    it('should subscribe when enabled is true but realtime is false initially, then realtime becomes true', async () => {
       const mockData = [{ id: '1', title: 'Test', collectionId: 'test', collectionName: 'test' }];
       mockGetFullList.mockResolvedValue(mockData);
 
       const wrapper = createWrapper(mockPocketBase);
 
-      const { rerender } = renderHook(({ subscribe }) => useCollection('test', { subscribe }), {
+      const { rerender } = renderHook(({ realtime }) => useCollection('test', { realtime }), {
         wrapper,
-        initialProps: { subscribe: false },
+        initialProps: { realtime: false },
       });
 
       await act(async () => {
@@ -616,13 +616,33 @@ describe('useCollection', () => {
 
       expect(mockSubscribe).not.toHaveBeenCalled();
 
-      rerender({ subscribe: true });
+      rerender({ realtime: true });
 
       await act(async () => {
         await new Promise((resolve) => setTimeout(resolve, 0));
       });
 
       expect(mockSubscribe).toHaveBeenCalled();
+    });
+
+    it('should unsubscribe when realtime changes from true to false', async () => {
+      const mockData = [{ id: '1', title: 'Test', collectionId: 'test', collectionName: 'test' }];
+      mockGetFullList.mockResolvedValue(mockData);
+      const unsubSpy = vi.fn();
+      mockSubscribe.mockResolvedValue(unsubSpy);
+      const wrapper = createWrapper(mockPocketBase);
+      const { rerender } = renderHook(({ realtime }) => useCollection('test', { realtime }), {
+        wrapper,
+        initialProps: { realtime: true },
+      });
+      await act(async () => {
+        await Promise.resolve();
+      });
+      rerender({ realtime: false });
+      await act(async () => {
+        await Promise.resolve();
+      });
+      expect(unsubSpy).toHaveBeenCalled();
     });
   });
 
@@ -792,6 +812,7 @@ describe('useCollection', () => {
     });
 
     it('should handle transformer errors gracefully', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       const mockData = [{ id: '1', title: 'Test 1', collectionId: 'test', collectionName: 'test' }];
 
       // Mock getFullList to return data without transformers applied
@@ -837,6 +858,8 @@ describe('useCollection', () => {
         { id: '1', title: 'Test 1', collectionId: 'test', collectionName: 'test' },
         { id: '2', title: 'Test 2', collectionId: 'test', collectionName: 'test' },
       ]);
+      expect(consoleSpy).toHaveBeenCalled();
+      consoleSpy.mockRestore();
     });
 
     it('should apply multiple transformers in sequence', async () => {

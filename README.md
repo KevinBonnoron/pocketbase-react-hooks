@@ -235,7 +235,7 @@ Fetches and manages a collection of data with real-time subscriptions.
   - `defaultValue`: Default value while loading
   - `enabled`: Boolean to enable/disable data fetching (default: `true`)
   - `fetchAll`: Boolean to use `getFullList` (true) or `getList` (false) (default: `true`)
-  - `subscribe`: Boolean to enable/disable real-time subscriptions (default: `true`)
+  - `realtime`: Boolean to enable/disable real-time subscriptions (default: `true`)
   - `requestKey`: Optional key passed to PocketBase for request cancellation (optional)
   - `transformers`: Array of transformer functions to apply to records (default: `[dateTransformer()]`)
 
@@ -337,7 +337,7 @@ import { useCollection } from 'pocketbase-react-hooks';
 function StaticPostsList() {
   const { data: posts, isLoading, isError, error } = useCollection('posts', {
     filter: 'status = "published"',
-    subscribe: false // Disable real-time updates
+    realtime: false // Disable real-time updates
   });
 
   if (isLoading) return <div>Loading posts...</div>;
@@ -378,7 +378,7 @@ function AdvancedPostsList({
     expand: 'author',
     fields: 'id,title,content,author',
     enabled: shouldFetch,
-    subscribe: enableRealtime
+    realtime: enableRealtime
   });
 
   if (!shouldFetch) return <div>Data fetching is disabled</div>;
@@ -851,11 +851,11 @@ function PostsList() {
 
 All hooks support real-time updates through PocketBase subscriptions:
 
-- `useCollection` automatically updates when records are created, updated, or deleted (can be disabled with `subscribe: false`)
+- `useCollection` automatically updates when records are created, updated, or deleted (can be disabled with `realtime: false`)
 - `useRecord` automatically updates when the specific record changes
 - `useAuth` automatically updates when authentication state changes
 
-**Note:** Real-time subscriptions are enabled by default but can be disabled using the `subscribe` option for better performance when real-time updates are not needed.
+**Note:** Real-time subscriptions are enabled by default but can be disabled using the `realtime` option for better performance when real-time updates are not needed.
 
 ## Request Cancellation with requestKey
 

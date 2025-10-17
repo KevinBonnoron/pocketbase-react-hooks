@@ -46,7 +46,7 @@ export interface UseCollectionOptions<T extends RecordModel> extends UseCommonOp
   /**
    * Enable real-time subscription to collection changes (default: true)
    */
-  subscribe?: boolean;
+  realtime?: boolean;
 
   /**
    * Request key for cancellation via pb.cancelRequest()

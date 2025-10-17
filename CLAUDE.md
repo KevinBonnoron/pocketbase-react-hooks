@@ -138,7 +138,7 @@ Error handling: If a transformer throws, `applyTransformers()` catches the error
 ## Important Notes
 
 - **Peer Dependencies**: React >=19.0.0 and PocketBase ^0.26.2 must be installed by consumers
-- **Real-time Subscriptions**: Enabled by default but can be disabled with `subscribe: false` option
+- **Real-time Subscriptions**: Enabled by default but can be disabled with `realtime: false` option
 - **Conditional Fetching**: Use `enabled: false` to disable data fetching (similar to TanStack Query)
 - **Error Handling**: All hooks expose `isError` and `error` for graceful error states
 - **Request Cancellation**: Use `requestKey` option in `useCollection` and `useRecord` to enable request cancellation via `pb.cancelRequest(key)`

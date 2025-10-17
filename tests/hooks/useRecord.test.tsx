@@ -1,4 +1,4 @@
-import '@testing-library/jest-dom';
+import '@testing-library/jest-dom/vitest';
 import { act, renderHook } from '@testing-library/react';
 import type PocketBase from 'pocketbase';
 import type { RecordModel } from 'pocketbase';
@@ -538,6 +538,66 @@ describe('useRecord', () => {
         ...mockRecord,
         title: 'TEST!',
       });
+    });
+  });
+
+  describe('realtime option', () => {
+    it('should subscribe to real-time updates when realtime is true (default)', async () => {
+      const mockRecord = { id: '1', title: 'Test Record', collectionId: 'test', collectionName: 'test' };
+      mockGetOne.mockResolvedValue(mockRecord);
+
+      const wrapper = createWrapper(mockPocketBase);
+
+      renderHook(() => useRecord('test', '1', { realtime: true }), { wrapper });
+
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+
+      expect(mockSubscribe).toHaveBeenCalledWith('1', expect.any(Function), {
+        expand: undefined,
+      });
+    });
+
+    it('should not subscribe to real-time updates when realtime is false', async () => {
+      const mockRecord = { id: '1', title: 'Test Record', collectionId: 'test', collectionName: 'test' };
+      mockGetOne.mockResolvedValue(mockRecord);
+
+      const wrapper = createWrapper(mockPocketBase);
+
+      renderHook(() => useRecord('test', '1', { realtime: false }), { wrapper });
+
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+
+      expect(mockSubscribe).not.toHaveBeenCalled();
+    });
+
+    it('should subscribe when realtime is false initially, then realtime becomes true', async () => {
+      const mockRecord = { id: '1', title: 'Test Record', collectionId: 'test', collectionName: 'test' };
+      mockGetOne.mockResolvedValue(mockRecord);
+
+      const wrapper = createWrapper(mockPocketBase);
+
+      const { rerender } = renderHook(({ realtime }) => useRecord('test', '1', { realtime }), {
+        wrapper,
+        initialProps: { realtime: false },
+      });
+
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+
+      expect(mockSubscribe).not.toHaveBeenCalled();
+
+      rerender({ realtime: true });
+
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+
+      expect(mockSubscribe).toHaveBeenCalled();
     });
   });
 

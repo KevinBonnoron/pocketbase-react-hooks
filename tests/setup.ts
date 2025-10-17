@@ -1,4 +1,4 @@
-import '@testing-library/jest-dom';
+import '@testing-library/jest-dom/vitest';
 
 // Ensure jsdom environment is properly set up
 if (typeof globalThis.document === 'undefined') {

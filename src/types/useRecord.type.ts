@@ -14,6 +14,11 @@ export interface UseRecordOptions<T extends RecordModel> extends UseCommonOption
   defaultValue?: T | null;
 
   /**
+   * Enable real-time subscription to record changes (default: true)
+   */
+  realtime?: boolean;
+
+  /**
    * Request key for cancellation via pb.cancelRequest()
    */
   requestKey?: string;

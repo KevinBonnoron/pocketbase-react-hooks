@@ -33,7 +33,7 @@ import { usePocketBase } from './usePocketBase';
 export function useRecord<Record extends RecordModel>(collectionName: string, recordId: Record['id'] | null | undefined, options?: UseRecordOptions<Record>): UseRecordResult<Record>;
 export function useRecord<Record extends RecordModel>(collectionName: string, filter: string | null | undefined, options?: UseRecordOptions<Record>): UseRecordResult<Record>;
 export function useRecord<Record extends RecordModel>(collectionName: string, recordIdOrFilter: Record['id'] | string | null | undefined, options: UseRecordOptions<Record> = {}): UseRecordResult<Record> {
-  const { expand, fields, defaultValue, requestKey } = options;
+  const { expand, fields, defaultValue, realtime = true, requestKey } = options;
   const pb = usePocketBase();
   const recordService = useMemo(() => pb.collection(collectionName), [pb, collectionName]);
 
@@ -45,7 +45,9 @@ export function useRecord<Record extends RecordModel>(collectionName: string, re
   });
 
   const transformers = useRef(options.transformers ?? [dateTransformer<Record>()]);
-  transformers.current = options.transformers ?? [dateTransformer<Record>()];
+  useEffect(() => {
+    transformers.current = options.transformers ?? [dateTransformer<Record>()];
+  }, [options.transformers]);
 
   const fetcher = useCallback(async (): Promise<Record> => {
     if (!recordIdOrFilter) {
@@ -80,7 +82,7 @@ export function useRecord<Record extends RecordModel>(collectionName: string, re
   }, [recordIdOrFilter, fetcher, queryState.reset, queryState.executeFetch]);
 
   useEffect(() => {
-    if (!recordIdOrFilter) return;
+    if (!recordIdOrFilter || !realtime) return;
 
     if (isId) {
       const unsubscribe = recordService.subscribe<Record>(
@@ -129,7 +131,7 @@ export function useRecord<Record extends RecordModel>(collectionName: string, re
         unsubscribe.then((unsub) => unsub());
       };
     }
-  }, [recordService, recordIdOrFilter, expand, isId, queryState.setData, requestKey]);
+  }, [recordService, recordIdOrFilter, expand, isId, realtime, queryState.setData, requestKey]);
 
   return queryState.result;
 }
