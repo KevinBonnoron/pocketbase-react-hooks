@@ -1,4 +1,3 @@
-import '@testing-library/jest-dom/vitest';
 import { act, renderHook } from '@testing-library/react';
 import type PocketBase from 'pocketbase';
 import type { RecordModel } from 'pocketbase';

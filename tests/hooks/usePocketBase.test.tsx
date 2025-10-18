@@ -1,4 +1,3 @@
-import '@testing-library/jest-dom/vitest';
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { usePocketBase } from '../../src/hooks/usePocketBase';
