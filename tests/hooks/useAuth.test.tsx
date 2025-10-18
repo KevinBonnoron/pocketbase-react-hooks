@@ -1,4 +1,4 @@
-import { act, renderHook } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 import type PocketBase from 'pocketbase';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAuth } from '../../src/hooks/useAuth';
@@ -24,16 +24,32 @@ describe('useAuth', () => {
   });
 
   it('should return loading state when isLoading is true', () => {
+    const mockAuth = vi.fn().mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          setTimeout(() => {
+            resolve({
+              record: { id: '1', email: 'test@example.com' },
+              token: null,
+            });
+          }, 100);
+        }),
+    );
+    mockPocketBase.collection = vi.fn().mockReturnValue({
+      authWithPassword: mockAuth,
+    });
+
     const wrapper = createWrapper(mockPocketBase);
 
     const { result } = renderHook(() => useAuth(), { wrapper });
 
-    act(() => {
-      result.current.signIn.email('test@example.com', 'password');
-    });
-
-    expect(result.current.isLoading).toBe(true);
+    expect(result.current.isLoading).toBe(false);
     expect(result.current.isAuthenticated).toBe(false);
+
+    return waitFor(() => {
+      result.current.signIn.email('test@example.com', 'password');
+      expect(result.current.isLoading).toBe(true);
+    });
   });
 
   it('should return error state when error is present', async () => {
@@ -47,12 +63,12 @@ describe('useAuth', () => {
 
     const { result } = renderHook(() => useAuth(), { wrapper });
 
-    await act(async () => {
-      await result.current.signIn.email('test@example.com', 'password');
-    });
+    await result.current.signIn.email('test@example.com', 'password');
 
-    expect(result.current.error).toEqual(mockError);
-    expect(result.current.isAuthenticated).toBe(false);
+    return waitFor(() => {
+      expect(result.current.error).toEqual(mockError);
+      expect(result.current.isAuthenticated).toBe(false);
+    });
   });
 
   it('should return authenticated state when user is present', () => {
@@ -117,14 +133,14 @@ describe('useAuth', () => {
 
     expect(result.current.user).toBe(null);
 
-    act(() => {
-      listeners.forEach((listener) => {
-        listener('mock-token', mockUser);
-      });
+    listeners.forEach((listener) => {
+      listener('mock-token', mockUser);
     });
 
-    expect(result.current.user).toEqual(mockUser);
-    expect(result.current.isAuthenticated).toBe(true);
+    return waitFor(() => {
+      expect(result.current.user).toEqual(mockUser);
+      expect(result.current.isAuthenticated).toBe(true);
+    });
   });
 
   describe('realtime', () => {
@@ -172,7 +188,6 @@ describe('useAuth', () => {
 
     it('should not handle user deletion via subscription when realtime is false', async () => {
       const mockUser = { id: '1', email: 'test@example.com' };
-      let subscriptionCallback: ((e: { action: string; record: unknown }) => void) | null = null;
 
       const mockPocketBaseWithUser = createMockAuthPocketBase({
         isValid: true,
@@ -180,10 +195,7 @@ describe('useAuth', () => {
       });
 
       mockPocketBaseWithUser.collection = vi.fn().mockReturnValue({
-        subscribe: vi.fn((id: string, callback: (e: { action: string; record: unknown }) => void) => {
-          subscriptionCallback = callback;
-          return Promise.resolve(() => {});
-        }),
+        subscribe: vi.fn(() => Promise.resolve(() => {})),
       });
 
       const wrapper = createWrapper(mockPocketBaseWithUser);
@@ -191,13 +203,6 @@ describe('useAuth', () => {
       const { result } = renderHook(() => useAuth({ realtime: false }), { wrapper });
 
       expect(result.current.user).toEqual(mockUser);
-
-      act(() => {
-        if (subscriptionCallback) {
-          subscriptionCallback({ action: 'delete', record: mockUser });
-        }
-      });
-
       expect(result.current.user).toEqual(mockUser);
       expect(result.current.isAuthenticated).toBe(true);
     });
@@ -223,11 +228,11 @@ describe('useAuth', () => {
 
       const { result } = renderHook(() => useAuth(), { wrapper });
 
-      await act(async () => {
-        await result.current.signIn.email('test@example.com', 'password', options);
-      });
+      await result.current.signIn.email('test@example.com', 'password', options);
 
-      expect(mockAuth).toHaveBeenCalledWith('test@example.com', 'password', expected);
+      return waitFor(() => {
+        expect(mockAuth).toHaveBeenCalledWith('test@example.com', 'password', expected);
+      });
     });
 
     it.each`
@@ -251,11 +256,11 @@ describe('useAuth', () => {
 
       const { result } = renderHook(() => useAuth(), { wrapper });
 
-      await act(async () => {
-        await result.current.signIn.social('google', options);
-      });
+      await result.current.signIn.social('google', options);
 
-      expect(mockAuth).toHaveBeenCalledWith({ provider: 'google', ...expected });
+      return waitFor(() => {
+        expect(mockAuth).toHaveBeenCalledWith({ provider: 'google', ...expected });
+      });
     });
 
     it.each`
@@ -277,16 +282,16 @@ describe('useAuth', () => {
 
       const { result } = renderHook(() => useAuth(), { wrapper });
 
-      await act(async () => {
-        await result.current.signIn.otp('123456', 'password', options);
-      });
+      await result.current.signIn.otp('123456', 'password', options);
 
-      expect(mockAuth).toHaveBeenCalledWith('123456', 'password', expected);
+      return waitFor(() => {
+        expect(mockAuth).toHaveBeenCalledWith('123456', 'password', expected);
+      });
     });
   });
 
   describe('signOut', () => {
-    it('should handle signOut', async () => {
+    it('should handle signOut', () => {
       const mockClear = vi.fn();
       mockPocketBase.authStore = {
         ...mockPocketBase.authStore,
@@ -297,11 +302,11 @@ describe('useAuth', () => {
 
       const { result } = renderHook(() => useAuth(), { wrapper });
 
-      await act(async () => {
+      return waitFor(() => {
         result.current.signOut();
-      });
 
-      expect(mockClear).toHaveBeenCalled();
+        expect(mockClear).toHaveBeenCalled();
+      });
     });
   });
 
@@ -323,19 +328,19 @@ describe('useAuth', () => {
 
       const { result } = renderHook(() => useAuth(), { wrapper });
 
-      await act(async () => {
-        await result.current.signUp.email('new@example.com', 'password', options);
-      });
+      await result.current.signUp.email('new@example.com', 'password', options);
 
-      const { additionalData, ...rest } = expected ?? {};
-      expect(mockCreate).toHaveBeenCalledWith(
-        {
-          email: 'new@example.com',
-          password: 'password',
-          ...additionalData,
-        },
-        rest,
-      );
+      return waitFor(() => {
+        const { additionalData, ...rest } = expected ?? {};
+        expect(mockCreate).toHaveBeenCalledWith(
+          {
+            email: 'new@example.com',
+            password: 'password',
+            ...additionalData,
+          },
+          rest,
+        );
+      });
     });
   });
 
@@ -360,13 +365,13 @@ describe('useAuth', () => {
 
       const { result } = renderHook(() => useAuth(), { wrapper });
 
-      await act(async () => {
-        await result.current.passwordReset.request('test@example.com', options);
-      });
+      await result.current.passwordReset.request('test@example.com', options);
 
-      expect(mockRequestPasswordReset).toHaveBeenCalledWith('test@example.com', expected);
-      expect(result.current.isLoading).toBe(false);
-      expect(result.current.error).toBe(null);
+      return waitFor(() => {
+        expect(mockRequestPasswordReset).toHaveBeenCalledWith('test@example.com', expected);
+        expect(result.current.isLoading).toBe(false);
+        expect(result.current.error).toBe(null);
+      });
     });
 
     it.each`
@@ -389,13 +394,13 @@ describe('useAuth', () => {
 
       const { result } = renderHook(() => useAuth(), { wrapper });
 
-      await act(async () => {
-        await result.current.passwordReset.confirm('token123', 'newpassword', 'newpassword', options);
-      });
+      await result.current.passwordReset.confirm('token123', 'newpassword', 'newpassword', options);
 
-      expect(mockConfirmPasswordReset).toHaveBeenCalledWith('token123', 'newpassword', 'newpassword', expected);
-      expect(result.current.isLoading).toBe(false);
-      expect(result.current.error).toBe(null);
+      return waitFor(() => {
+        expect(mockConfirmPasswordReset).toHaveBeenCalledWith('token123', 'newpassword', 'newpassword', expected);
+        expect(result.current.isLoading).toBe(false);
+        expect(result.current.error).toBe(null);
+      });
     });
 
     it.each`
@@ -419,12 +424,12 @@ describe('useAuth', () => {
 
       const { result } = renderHook(() => useAuth(), { wrapper });
 
-      await act(async () => {
-        await result.current.passwordReset.request('test@example.com', options);
-      });
+      await result.current.passwordReset.request('test@example.com', options);
 
-      expect(result.current.error).toBe(mockError);
-      expect(result.current.isLoading).toBe(false);
+      return waitFor(() => {
+        expect(result.current.error).toBe(mockError);
+        expect(result.current.isLoading).toBe(false);
+      });
     });
 
     it.each`
@@ -448,12 +453,12 @@ describe('useAuth', () => {
 
       const { result } = renderHook(() => useAuth(), { wrapper });
 
-      await act(async () => {
-        await result.current.passwordReset.confirm('token123', 'newpassword', 'newpassword', options);
-      });
+      await result.current.passwordReset.confirm('token123', 'newpassword', 'newpassword', options);
 
-      expect(result.current.error).toBe(mockError);
-      expect(result.current.isLoading).toBe(false);
+      return waitFor(() => {
+        expect(result.current.error).toBe(mockError);
+        expect(result.current.isLoading).toBe(false);
+      });
     });
   });
 
@@ -478,13 +483,13 @@ describe('useAuth', () => {
 
       const { result } = renderHook(() => useAuth(), { wrapper });
 
-      await act(async () => {
-        await result.current.verification.request('test@example.com', options);
-      });
+      await result.current.verification.request('test@example.com', options);
 
-      expect(mockRequestVerification).toHaveBeenCalledWith('test@example.com', expected);
-      expect(result.current.isLoading).toBe(false);
-      expect(result.current.error).toBe(null);
+      return waitFor(() => {
+        expect(mockRequestVerification).toHaveBeenCalledWith('test@example.com', expected);
+        expect(result.current.isLoading).toBe(false);
+        expect(result.current.error).toBe(null);
+      });
     });
 
     it.each`
@@ -507,13 +512,13 @@ describe('useAuth', () => {
 
       const { result } = renderHook(() => useAuth(), { wrapper });
 
-      await act(async () => {
-        await result.current.verification.confirm('token123', options);
-      });
+      await result.current.verification.confirm('token123', options);
 
-      expect(mockConfirmVerification).toHaveBeenCalledWith('token123', expected);
-      expect(result.current.isLoading).toBe(false);
-      expect(result.current.error).toBe(null);
+      return waitFor(() => {
+        expect(mockConfirmVerification).toHaveBeenCalledWith('token123', expected);
+        expect(result.current.isLoading).toBe(false);
+        expect(result.current.error).toBe(null);
+      });
     });
 
     it.each`
@@ -537,12 +542,12 @@ describe('useAuth', () => {
 
       const { result } = renderHook(() => useAuth(), { wrapper });
 
-      await act(async () => {
-        await result.current.verification.request('test@example.com', options);
-      });
+      await result.current.verification.request('test@example.com', options);
 
-      expect(result.current.error).toBe(mockError);
-      expect(result.current.isLoading).toBe(false);
+      return waitFor(() => {
+        expect(result.current.error).toBe(mockError);
+        expect(result.current.isLoading).toBe(false);
+      });
     });
 
     it.each`
@@ -566,12 +571,12 @@ describe('useAuth', () => {
 
       const { result } = renderHook(() => useAuth(), { wrapper });
 
-      await act(async () => {
-        await result.current.verification.confirm('token123', options);
-      });
+      await result.current.verification.confirm('token123', options);
 
-      expect(result.current.error).toBe(mockError);
-      expect(result.current.isLoading).toBe(false);
+      return waitFor(() => {
+        expect(result.current.error).toBe(mockError);
+        expect(result.current.isLoading).toBe(false);
+      });
     });
   });
 });

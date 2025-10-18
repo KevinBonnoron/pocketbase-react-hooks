@@ -1,4 +1,4 @@
-import { act, renderHook } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 import type PocketBase from 'pocketbase';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useCreateMutation } from '../../src/hooks/useCreateMutation';
@@ -33,22 +33,21 @@ describe('useCreateMutation', () => {
 
     const { result } = renderHook(() => useCreateMutation('test'), { wrapper });
 
-    let mutationResult: unknown;
-    await act(async () => {
-      mutationResult = await result.current.mutate({
-        title: 'New Item',
-      });
+    const mutationResult = await result.current.mutate({
+      title: 'New Item',
     });
 
-    expect(mockCreate).toHaveBeenCalledWith(
-      {
-        title: 'New Item',
-      },
-      undefined,
-    );
-    expect(mutationResult).toEqual(mockData);
-    expect(result.current.isPending).toBe(false);
-    expect(result.current.isSuccess).toBe(true);
+    return waitFor(() => {
+      expect(mockCreate).toHaveBeenCalledWith(
+        {
+          title: 'New Item',
+        },
+        undefined,
+      );
+      expect(mutationResult).toEqual(mockData);
+      expect(result.current.isPending).toBe(false);
+      expect(result.current.isSuccess).toBe(true);
+    });
   });
 
   it('should handle create mutation with options', async () => {
@@ -60,11 +59,12 @@ describe('useCreateMutation', () => {
     const { result } = renderHook(() => useCreateMutation('test'), { wrapper });
 
     const options = { expand: 'relation' };
-    await act(async () => {
-      await result.current.mutate({ title: 'New Item' }, options);
-    });
 
-    expect(mockCreate).toHaveBeenCalledWith({ title: 'New Item' }, options);
+    await result.current.mutate({ title: 'New Item' }, options);
+
+    return waitFor(() => {
+      expect(mockCreate).toHaveBeenCalledWith({ title: 'New Item' }, options);
+    });
   });
 
   it('should handle mutation error', async () => {
@@ -75,13 +75,13 @@ describe('useCreateMutation', () => {
 
     const { result } = renderHook(() => useCreateMutation('test'), { wrapper });
 
-    await act(async () => {
-      await result.current.mutate({ title: 'Test' });
-    });
+    await result.current.mutate({ title: 'Test' });
 
-    expect(result.current.error).toEqual('Create failed');
-    expect(result.current.isPending).toBe(false);
-    expect(result.current.isSuccess).toBe(false);
+    return waitFor(() => {
+      expect(result.current.error).toEqual('Create failed');
+      expect(result.current.isPending).toBe(false);
+      expect(result.current.isSuccess).toBe(false);
+    });
   });
 
   it('should handle non-Error exceptions', async () => {
@@ -91,13 +91,13 @@ describe('useCreateMutation', () => {
 
     const { result } = renderHook(() => useCreateMutation('test'), { wrapper });
 
-    await act(async () => {
-      await result.current.mutate({ title: 'Test' });
-    });
+    await result.current.mutate({ title: 'Test' });
 
-    expect(result.current.error).toBe('Error creating record');
-    expect(result.current.isPending).toBe(false);
-    expect(result.current.isSuccess).toBe(false);
+    return waitFor(() => {
+      expect(result.current.error).toBe('Error creating record');
+      expect(result.current.isPending).toBe(false);
+      expect(result.current.isSuccess).toBe(false);
+    });
   });
 
   it('should set isPending to true during mutation', async () => {
@@ -111,20 +111,19 @@ describe('useCreateMutation', () => {
 
     const { result } = renderHook(() => useCreateMutation('test'), { wrapper });
 
-    act(() => {
+    waitFor(() => {
       result.current.mutate({ title: 'Test' });
-    });
-
-    expect(result.current.isPending).toBe(true);
-    expect(result.current.isSuccess).toBe(false);
-
-    await act(async () => {
+      expect(result.current.isPending).toBe(true);
+      expect(result.current.isSuccess).toBe(false);
       resolveCreate({ id: '1', title: 'Test' });
-      await createPromise;
     });
 
-    expect(result.current.isPending).toBe(false);
-    expect(result.current.isSuccess).toBe(true);
+    await createPromise;
+
+    return waitFor(() => {
+      expect(result.current.isPending).toBe(false);
+      expect(result.current.isSuccess).toBe(true);
+    });
   });
 
   it('should throw error when used outside provider', () => {

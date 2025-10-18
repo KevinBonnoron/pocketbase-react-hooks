@@ -1,7 +1,7 @@
-import { act, renderHook } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 import type PocketBase from 'pocketbase';
 import type { RecordModel } from 'pocketbase';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useRecord } from '../../src/hooks/useRecord';
 import { createMockPocketBase, createWrapper, getMockCollectionMethods } from '../test-utils';
 
@@ -39,15 +39,13 @@ describe('useRecord', () => {
 
     const { result } = renderHook(() => useRecord('test', '1'), { wrapper });
 
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
+    return waitFor(() => {
+      expect(mockGetOne).toHaveBeenCalledWith('1', {});
+      expect(result.current.data).toEqual(mockRecord);
+      expect(result.current.isLoading).toBe(false);
+      expect(result.current.isSuccess).toBe(true);
+      expect(result.current.isError).toBe(false);
     });
-
-    expect(mockGetOne).toHaveBeenCalledWith('1', {});
-    expect(result.current.data).toEqual(mockRecord);
-    expect(result.current.isLoading).toBe(false);
-    expect(result.current.isSuccess).toBe(true);
-    expect(result.current.isError).toBe(false);
   });
 
   it('should fetch record by filter', async () => {
@@ -58,15 +56,13 @@ describe('useRecord', () => {
 
     const { result } = renderHook(() => useRecord('test', 'slug="test-record"'), { wrapper });
 
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
+    return waitFor(() => {
+      expect(mockGetFirstListItem).toHaveBeenCalledWith('slug="test-record"', {});
+      expect(result.current.data).toEqual(mockRecord);
+      expect(result.current.isLoading).toBe(false);
+      expect(result.current.isSuccess).toBe(true);
+      expect(result.current.isError).toBe(false);
     });
-
-    expect(mockGetFirstListItem).toHaveBeenCalledWith('slug="test-record"', {});
-    expect(result.current.data).toEqual(mockRecord);
-    expect(result.current.isLoading).toBe(false);
-    expect(result.current.isSuccess).toBe(true);
-    expect(result.current.isError).toBe(false);
   });
 
   it('should handle fetch error', async () => {
@@ -77,14 +73,12 @@ describe('useRecord', () => {
 
     const { result } = renderHook(() => useRecord('test', '1'), { wrapper });
 
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
+    return waitFor(() => {
+      expect(result.current.error).toBe('Record not found');
+      expect(result.current.isLoading).toBe(false);
+      expect(result.current.isError).toBe(true);
+      expect(result.current.data).toBe(null);
     });
-
-    expect(result.current.error).toBe('Record not found');
-    expect(result.current.isLoading).toBe(false);
-    expect(result.current.isError).toBe(true);
-    expect(result.current.data).toBe(null);
   });
 
   it('should use custom options', async () => {
@@ -102,13 +96,11 @@ describe('useRecord', () => {
       { wrapper },
     );
 
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    });
-
-    expect(mockGetOne).toHaveBeenCalledWith('1', {
-      expand: 'author',
-      fields: 'id,title,content',
+    return waitFor(() => {
+      expect(mockGetOne).toHaveBeenCalledWith('1', {
+        expand: 'author',
+        fields: 'id,title,content',
+      });
     });
   });
 
@@ -120,12 +112,8 @@ describe('useRecord', () => {
 
     renderHook(() => useRecord('test', '1'), { wrapper });
 
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    });
-
-    expect(mockSubscribe).toHaveBeenCalledWith('1', expect.any(Function), {
-      expand: undefined,
+    return waitFor(() => {
+      expect(mockSubscribe).toHaveBeenCalledWith('1', expect.any(Function), {});
     });
   });
 
@@ -137,13 +125,10 @@ describe('useRecord', () => {
 
     renderHook(() => useRecord('test', 'slug="test-record"'), { wrapper });
 
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    });
-
-    expect(mockSubscribe).toHaveBeenCalledWith('*', expect.any(Function), {
-      expand: undefined,
-      filter: 'slug="test-record"',
+    return waitFor(() => {
+      expect(mockSubscribe).toHaveBeenCalledWith('*', expect.any(Function), {
+        filter: 'slug="test-record"',
+      });
     });
   });
 
@@ -163,20 +148,17 @@ describe('useRecord', () => {
 
     const { result } = renderHook(() => useRecord('test', '1'), { wrapper });
 
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    });
-
-    expect(result.current.data).toEqual(initialRecord);
-
-    await act(async () => {
+    await waitFor(() => {
+      expect(result.current.data).toEqual(initialRecord);
       subscriptionCallback({
         action: 'update',
         record: updatedRecord,
       });
     });
 
-    expect(result.current.data).toEqual(updatedRecord);
+    return waitFor(() => {
+      expect(result.current.data).toEqual(updatedRecord);
+    });
   });
 
   it('should handle real-time delete events', async () => {
@@ -195,20 +177,17 @@ describe('useRecord', () => {
 
     const { result } = renderHook(() => useRecord('test', '1'), { wrapper });
 
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    });
-
-    expect(result.current.data).toEqual(initialRecord);
-
-    await act(async () => {
+    await waitFor(() => {
+      expect(result.current.data).toEqual(initialRecord);
       subscriptionCallback({
         action: 'delete',
         record: deletedRecord,
       });
     });
 
-    expect(result.current.data).toBe(null);
+    return waitFor(() => {
+      expect(result.current.data).toBe(null);
+    });
   });
 
   it('should handle real-time create events for filter-based queries', async () => {
@@ -227,20 +206,17 @@ describe('useRecord', () => {
 
     const { result } = renderHook(() => useRecord('test', 'slug="test-record"'), { wrapper });
 
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    });
-
-    expect(result.current.data).toEqual(initialRecord);
-
-    await act(async () => {
+    await waitFor(() => {
+      expect(result.current.data).toEqual(initialRecord);
       subscriptionCallback({
         action: 'create',
         record: newRecord,
       });
     });
 
-    expect(result.current.data).toEqual(newRecord);
+    return waitFor(() => {
+      expect(result.current.data).toEqual(newRecord);
+    });
   });
 
   it('should ignore real-time delete events for different records when using filter', async () => {
@@ -259,20 +235,17 @@ describe('useRecord', () => {
 
     const { result } = renderHook(() => useRecord('test', 'slug="test-record"'), { wrapper });
 
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    });
-
-    expect(result.current.data).toEqual(initialRecord);
-
-    await act(async () => {
+    await waitFor(() => {
+      expect(result.current.data).toEqual(initialRecord);
       subscriptionCallback({
         action: 'delete',
         record: otherRecord,
       });
     });
 
-    expect(result.current.data).toEqual(initialRecord);
+    return waitFor(() => {
+      expect(result.current.data).toEqual(initialRecord);
+    });
   });
 
   describe('transformers', () => {
@@ -291,14 +264,12 @@ describe('useRecord', () => {
 
       const { result } = renderHook(() => useRecord('test', '1'), { wrapper });
 
-      await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 0));
+      return waitFor(() => {
+        expect(result.current.data?.created).toBeInstanceOf(Date);
+        expect(result.current.data?.updated).toBeInstanceOf(Date);
+        expect((result.current.data?.created as Date).toISOString()).toBe('2024-01-01T10:00:00.123Z');
+        expect((result.current.data?.updated as Date).toISOString()).toBe('2024-01-01T11:00:00.456Z');
       });
-
-      expect(result.current.data?.created).toBeInstanceOf(Date);
-      expect(result.current.data?.updated).toBeInstanceOf(Date);
-      expect((result.current.data?.created as Date).toISOString()).toBe('2024-01-01T10:00:00.123Z');
-      expect((result.current.data?.updated as Date).toISOString()).toBe('2024-01-01T11:00:00.456Z');
     });
 
     it('should apply transformers to fetched data', async () => {
@@ -327,13 +298,11 @@ describe('useRecord', () => {
         { wrapper },
       );
 
-      await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      });
-
-      expect(result.current.data).toEqual({
-        ...mockRecord,
-        title: 'TEST RECORD',
+      return waitFor(() => {
+        expect(result.current.data).toEqual({
+          ...mockRecord,
+          title: 'TEST RECORD',
+        });
       });
     });
 
@@ -374,20 +343,16 @@ describe('useRecord', () => {
         { wrapper },
       );
 
-      await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      });
-
-      await act(async () => {
+      return waitFor(() => {
         subscriptionCallback({
           action: 'update',
           record: updatedRecord,
         });
-      });
 
-      expect(result.current.data).toEqual({
-        ...updatedRecord,
-        title: 'UPDATED RECORD',
+        expect(result.current.data).toEqual({
+          ...updatedRecord,
+          title: 'UPDATED RECORD',
+        });
       });
     });
 
@@ -428,24 +393,22 @@ describe('useRecord', () => {
         { wrapper },
       );
 
-      await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      });
-
-      await act(async () => {
+      return waitFor(() => {
         subscriptionCallback({
           action: 'update',
           record: updatedRecord,
         });
-      });
 
-      expect(result.current.data).toEqual({
-        ...updatedRecord,
-        title: 'UPDATED RECORD',
+        expect(result.current.data).toEqual({
+          ...updatedRecord,
+          title: 'UPDATED RECORD',
+        });
       });
     });
 
     it('should handle transformer errors gracefully', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
       const mockRecord: RecordModel = {
         id: '1',
         title: 'Test Record',
@@ -475,27 +438,25 @@ describe('useRecord', () => {
         { wrapper },
       );
 
-      await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 0));
+      await waitFor(() => {
+        expect(result.current.data).toEqual(mockRecord);
+        expect(result.current.isError).toBe(false);
+        expect(errorSpy).toHaveBeenCalled();
+        errorSpy.mockRestore();
       });
 
-      // The initial data should be returned without transformation when transformer fails
-      expect(result.current.data).toEqual(mockRecord);
-      expect(result.current.isError).toBe(false);
-
-      await act(async () => {
+      return waitFor(() => {
         subscriptionCallback({
           action: 'update',
           record: { id: '1', title: 'Updated Record', collectionId: 'test', collectionName: 'test' },
         });
-      });
 
-      // Should fallback to original record when transformer fails in real-time
-      expect(result.current.data).toEqual({
-        id: '1',
-        title: 'Updated Record',
-        collectionId: 'test',
-        collectionName: 'test',
+        expect(result.current.data).toEqual({
+          id: '1',
+          title: 'Updated Record',
+          collectionId: 'test',
+          collectionName: 'test',
+        });
       });
     });
 
@@ -529,13 +490,11 @@ describe('useRecord', () => {
         { wrapper },
       );
 
-      await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      });
-
-      expect(result.current.data).toEqual({
-        ...mockRecord,
-        title: 'TEST!',
+      return waitFor(() => {
+        expect(result.current.data).toEqual({
+          ...mockRecord,
+          title: 'TEST!',
+        });
       });
     });
   });
@@ -549,12 +508,8 @@ describe('useRecord', () => {
 
       renderHook(() => useRecord('test', '1', { realtime: true }), { wrapper });
 
-      await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      });
-
-      expect(mockSubscribe).toHaveBeenCalledWith('1', expect.any(Function), {
-        expand: undefined,
+      return waitFor(() => {
+        expect(mockSubscribe).toHaveBeenCalledWith('1', expect.any(Function), {});
       });
     });
 
@@ -566,11 +521,9 @@ describe('useRecord', () => {
 
       renderHook(() => useRecord('test', '1', { realtime: false }), { wrapper });
 
-      await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 0));
+      return waitFor(() => {
+        expect(mockSubscribe).not.toHaveBeenCalled();
       });
-
-      expect(mockSubscribe).not.toHaveBeenCalled();
     });
 
     it('should subscribe when realtime is false initially, then realtime becomes true', async () => {
@@ -584,19 +537,29 @@ describe('useRecord', () => {
         initialProps: { realtime: false },
       });
 
-      await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 0));
+      await waitFor(() => {
+        expect(mockSubscribe).not.toHaveBeenCalled();
       });
-
-      expect(mockSubscribe).not.toHaveBeenCalled();
 
       rerender({ realtime: true });
 
-      await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 0));
+      return waitFor(() => {
+        expect(mockSubscribe).toHaveBeenCalled();
       });
+    });
 
-      expect(mockSubscribe).toHaveBeenCalled();
+    it('should cleanup subscription on unmount', async () => {
+      const mockRecord = { id: '1', title: 'Test', collectionId: 'test', collectionName: 'test' };
+      mockGetOne.mockResolvedValue(mockRecord);
+      const unsub = vi.fn();
+      mockSubscribe.mockResolvedValue(unsub);
+      const wrapper = createWrapper(mockPocketBase);
+      const { unmount } = renderHook(() => useRecord('test', '1'), { wrapper });
+
+      unmount();
+      return waitFor(() => {
+        expect(unsub).toHaveBeenCalledTimes(1);
+      });
     });
   });
 

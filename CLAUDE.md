@@ -128,7 +128,23 @@ Error handling: If a transformer throws, `applyTransformers()` catches the error
 - Verify subscription setup and cleanup
 - Use `renderHook` from `@testing-library/react` to test hooks
 - Wrap hooks in `PocketBaseProvider` with mocked client
+- Use `waitFor` from `@testing-library/react` for assertions only (not `act` + `setTimeout`):
+  - Do NOT pass an async callback.
+  - Perform actions (user events/hook calls) before waitFor.
+  - Always return or await the waitFor promise.
+  ```typescript
+  // ✅ Correct
+  await result.current.mutate('1');
+  await waitFor(() => {
+    expect(result.current.isSuccess).toBe(true);
+  });
 
+  // ❌ Incorrect
+  await waitFor(async () => {
+    await result.current.mutate('1');
+    expect(result.current.isSuccess).toBe(true);
+  });
+```
 ### Code Style
 - **NEVER add comments** to code (enforced by .cursorrules)
 - Use Biome for formatting and linting
