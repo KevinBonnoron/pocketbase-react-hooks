@@ -1,6 +1,7 @@
 import type { RecordModel } from 'pocketbase';
-import { useEffect, useMemo } from 'react';
-import { sortRecords } from '../lib/utils';
+import { useEffect, useMemo, useRef } from 'react';
+import { applyTransformers, sortRecords } from '../lib/utils';
+import { dateTransformer } from '../transformers';
 import type { UseCollectionOptions, UseCollectionResult } from '../types';
 import { useQueryState } from './internal/useQueryState';
 import { usePocketBase } from './usePocketBase';
@@ -31,7 +32,7 @@ import { usePocketBase } from './usePocketBase';
  * ```
  */
 export function useCollection<Record extends RecordModel>(collectionName: string, options: UseCollectionOptions<Record> = {}): UseCollectionResult<Record> {
-  const { enabled = true, page, perPage, filter, sort, expand, fields, defaultValue, fetchAll = true, subscribe = true, requestKey } = options;
+  const { enabled = true, page, perPage, filter, sort, expand, fields, defaultValue, fetchAll = true, realtime = true, requestKey } = options;
 
   const pb = usePocketBase();
   const recordService = useMemo(() => pb.collection(collectionName), [pb, collectionName]);
@@ -41,6 +42,9 @@ export function useCollection<Record extends RecordModel>(collectionName: string
     initialLoading: enabled,
   });
 
+  const transformers = useRef(options.transformers ?? [dateTransformer<Record>()]);
+  transformers.current = options.transformers ?? [dateTransformer<Record>()];
+
   useEffect(() => {
     if (!enabled) {
       queryState.reset();
@@ -48,7 +52,7 @@ export function useCollection<Record extends RecordModel>(collectionName: string
     }
 
     return queryState.executeFetch(async () => {
-      let result: Record[];
+      let result: Record[] | null;
       if (fetchAll) {
         result = await recordService.getFullList<Record>({
           ...(page && { page }),
@@ -60,39 +64,42 @@ export function useCollection<Record extends RecordModel>(collectionName: string
           ...(requestKey && { requestKey }),
         });
       } else {
-        const listResult = await recordService.getList<Record>(page ?? 1, perPage ?? 20, {
+        const { items } = await recordService.getList<Record>(page ?? 1, perPage ?? 20, {
           ...(filter && { filter }),
           ...(sort && { sort }),
           ...(expand && { expand }),
           ...(fields && { fields }),
           ...(requestKey && { requestKey }),
         });
-        result = listResult.items;
+        result = items;
       }
-      return result;
+
+      return result ? result.map((record) => applyTransformers(record, transformers.current)) : [];
     }, 'Failed to fetch collection');
   }, [enabled, recordService, page, perPage, filter, sort, expand, fields, fetchAll, requestKey, queryState.reset, queryState.executeFetch]);
 
   useEffect(() => {
-    if (!enabled || !subscribe) return;
+    if (!enabled || !realtime) return;
 
-    const unsubscribe = recordService.subscribe(
+    const unsubscribe = recordService.subscribe<Record>(
       '*',
       (e) => {
         queryState.setData((currentData) => {
           let newData = currentData ? [...currentData] : [];
           switch (e.action) {
             case 'create':
-              newData.push(e.record as Record);
+              {
+                newData.push(applyTransformers(e.record, transformers.current));
+              }
               break;
 
             case 'update':
               {
                 const updateIndex = newData.findIndex(({ id }) => id === e.record.id);
                 if (updateIndex !== -1) {
-                  newData[updateIndex] = e.record as Record;
+                  newData[updateIndex] = applyTransformers(e.record, transformers.current);
                 } else {
-                  newData.push(e.record as Record);
+                  newData.push(applyTransformers(e.record, transformers.current));
                 }
               }
               break;
@@ -124,7 +131,7 @@ export function useCollection<Record extends RecordModel>(collectionName: string
     return () => {
       unsubscribe.then((unsub) => unsub());
     };
-  }, [enabled, subscribe, recordService, expand, filter, sort, requestKey, queryState.setData]);
+  }, [enabled, realtime, recordService, expand, filter, sort, requestKey, queryState.setData]);
 
   return queryState.result;
 }

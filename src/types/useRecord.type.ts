@@ -7,11 +7,16 @@ import type { UseCommonOptions } from './useCommon.type';
  *
  * @template T - The record type extending RecordModel
  */
-export interface UseRecordOptions<T extends RecordModel> extends UseCommonOptions {
+export interface UseRecordOptions<T extends RecordModel> extends UseCommonOptions<T> {
   /**
    * Default value to use before data is loaded
    */
   defaultValue?: T | null;
+
+  /**
+   * Enable real-time subscription to record changes (default: true)
+   */
+  realtime?: boolean;
 
   /**
    * Request key for cancellation via pb.cancelRequest()

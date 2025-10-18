@@ -1,4 +1,4 @@
-import { act, renderHook } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 import type PocketBase from 'pocketbase';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useUpdateMutation } from '../../src/hooks/useUpdateMutation';
@@ -33,19 +33,18 @@ describe('useUpdateMutation', () => {
 
     const { result } = renderHook(() => useUpdateMutation('test'), { wrapper });
 
-    let mutationResult: unknown;
-    await act(async () => {
-      mutationResult = await result.current.mutate('1', {
-        title: 'Updated Item',
-      });
-    });
-
-    expect(mockUpdate).toHaveBeenCalledWith('1', {
+    const mutationResult = await result.current.mutate('1', {
       title: 'Updated Item',
     });
-    expect(mutationResult).toEqual(mockData);
-    expect(result.current.isPending).toBe(false);
-    expect(result.current.isSuccess).toBe(true);
+
+    return waitFor(() => {
+      expect(mockUpdate).toHaveBeenCalledWith('1', {
+        title: 'Updated Item',
+      });
+      expect(mutationResult).toEqual(mockData);
+      expect(result.current.isPending).toBe(false);
+      expect(result.current.isSuccess).toBe(true);
+    });
   });
 
   it('should handle update mutation with options', async () => {
@@ -57,11 +56,11 @@ describe('useUpdateMutation', () => {
     const { result } = renderHook(() => useUpdateMutation('test'), { wrapper });
 
     const options = { expand: 'relation' };
-    await act(async () => {
-      await result.current.mutate('1', { title: 'Updated Item' }, options);
-    });
+    await result.current.mutate('1', { title: 'Updated Item' }, options);
 
-    expect(mockUpdate).toHaveBeenCalledWith('1', { title: 'Updated Item' }, options);
+    return waitFor(() => {
+      expect(mockUpdate).toHaveBeenCalledWith('1', { title: 'Updated Item' }, options);
+    });
   });
 
   it('should handle mutation error', async () => {
@@ -72,13 +71,13 @@ describe('useUpdateMutation', () => {
 
     const { result } = renderHook(() => useUpdateMutation('test'), { wrapper });
 
-    await act(async () => {
-      await result.current.mutate('1', { title: 'Test' });
-    });
+    await result.current.mutate('1', { title: 'Test' });
 
-    expect(result.current.error).toEqual('Update failed');
-    expect(result.current.isPending).toBe(false);
-    expect(result.current.isSuccess).toBe(false);
+    return waitFor(() => {
+      expect(result.current.error).toEqual('Update failed');
+      expect(result.current.isPending).toBe(false);
+      expect(result.current.isSuccess).toBe(false);
+    });
   });
 
   it('should handle non-Error exceptions', async () => {
@@ -88,13 +87,13 @@ describe('useUpdateMutation', () => {
 
     const { result } = renderHook(() => useUpdateMutation('test'), { wrapper });
 
-    await act(async () => {
-      await result.current.mutate('1', { title: 'Test' });
-    });
+    await result.current.mutate('1', { title: 'Test' });
 
-    expect(result.current.error).toBe('Error updating record');
-    expect(result.current.isPending).toBe(false);
-    expect(result.current.isSuccess).toBe(false);
+    return waitFor(() => {
+      expect(result.current.error).toBe('Error updating record');
+      expect(result.current.isPending).toBe(false);
+      expect(result.current.isSuccess).toBe(false);
+    });
   });
 
   it('should set isPending to true during mutation', async () => {
@@ -108,20 +107,19 @@ describe('useUpdateMutation', () => {
 
     const { result } = renderHook(() => useUpdateMutation('test'), { wrapper });
 
-    act(() => {
+    waitFor(() => {
       result.current.mutate('1', { title: 'Test' });
-    });
-
-    expect(result.current.isPending).toBe(true);
-    expect(result.current.isSuccess).toBe(false);
-
-    await act(async () => {
+      expect(result.current.isPending).toBe(true);
+      expect(result.current.isSuccess).toBe(false);
       resolveUpdate({ id: '1', title: 'Test' });
-      await updatePromise;
     });
 
-    expect(result.current.isPending).toBe(false);
-    expect(result.current.isSuccess).toBe(true);
+    await updatePromise;
+
+    return waitFor(() => {
+      expect(result.current.isPending).toBe(false);
+      expect(result.current.isSuccess).toBe(true);
+    });
   });
 
   it('should throw error when used outside provider', () => {

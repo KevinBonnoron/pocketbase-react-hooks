@@ -29,7 +29,7 @@ First, here's an example of a PocketBase database schema you might use:
 - `status` (select: draft, published, archived)
 - `author` (relation to users)
 - `tags` (json array)
-- `published_at` (date, optional)
+- `publishedAt` (date, optional)
 
 **comments** (Regular collection)
 - `content` (text, required)

@@ -235,8 +235,9 @@ Fetches and manages a collection of data with real-time subscriptions.
   - `defaultValue`: Default value while loading
   - `enabled`: Boolean to enable/disable data fetching (default: `true`)
   - `fetchAll`: Boolean to use `getFullList` (true) or `getList` (false) (default: `true`)
-  - `subscribe`: Boolean to enable/disable real-time subscriptions (default: `true`)
+  - `realtime`: Boolean to enable/disable real-time subscriptions (default: `true`)
   - `requestKey`: Optional key passed to PocketBase for request cancellation (optional)
+  - `transformers`: Array of transformer functions to apply to records (default: `[dateTransformer()]`)
 
 **Returns:**
 - `data`: Array of records or null
@@ -336,7 +337,7 @@ import { useCollection } from 'pocketbase-react-hooks';
 function StaticPostsList() {
   const { data: posts, isLoading, isError, error } = useCollection('posts', {
     filter: 'status = "published"',
-    subscribe: false // Disable real-time updates
+    realtime: false // Disable real-time updates
   });
 
   if (isLoading) return <div>Loading posts...</div>;
@@ -377,7 +378,7 @@ function AdvancedPostsList({
     expand: 'author',
     fields: 'id,title,content,author',
     enabled: shouldFetch,
-    subscribe: enableRealtime
+    realtime: enableRealtime
   });
 
   if (!shouldFetch) return <div>Data fetching is disabled</div>;
@@ -411,6 +412,7 @@ Fetches and manages a single record with real-time updates. Can fetch by ID or b
   - `fields`: Fields to return
   - `defaultValue`: Default value while loading
   - `requestKey`: Optional key passed to PocketBase for request cancellation (optional)
+  - `transformers`: Array of transformer functions to apply to the record (default: `[dateTransformer()]`)
 
 **Returns:**
 - `data`: Record object or null
@@ -627,7 +629,7 @@ interface Post extends RecordModel {
   status: 'draft' | 'published' | 'archived';
   author: string; // relation to users
   tags: string[];
-  published_at?: string;
+  publishedAt?: Date;
 }
 
 // Use with custom types
@@ -640,15 +642,220 @@ const { mutate: updatePost } = useUpdateMutation<Post>('posts');
 const { mutate: deletePost } = useDeleteMutation('posts');
 ```
 
+## Data Transformers
+
+The library includes a powerful data transformation system that allows you to automatically transform data received from PocketBase before it reaches your components.
+
+### Default Date Transformation
+
+By default, both `useCollection` and `useRecord` automatically apply a `dateTransformer` that converts ISO date strings to JavaScript `Date` objects for the `created` and `updated` fields.
+
+```tsx
+import { useCollection } from 'pocketbase-react-hooks';
+
+interface Post extends RecordModel {
+  title: string;
+  content: string;
+  created: Date;  // Automatically transformed from string to Date
+  updated: Date;  // Automatically transformed from string to Date
+}
+
+function PostsList() {
+  const { data: posts } = useCollection<Post>('posts');
+
+  return (
+    <div>
+      {posts?.map(post => (
+        <div key={post.id}>
+          <h3>{post.title}</h3>
+          <p>Created: {post.created.toLocaleDateString()}</p>
+          <p>Updated: {post.updated.toLocaleString()}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### Custom Date Fields
+
+You can configure the `dateTransformer` to transform additional date fields:
+
+```tsx
+import { useCollection, dateTransformer } from 'pocketbase-react-hooks';
+
+interface Post extends RecordModel {
+  title: string;
+  publishedAt: Date;
+  created: Date;
+  updated: Date;
+}
+
+function PostsList() {
+  const { data: posts } = useCollection<Post>('posts', {
+    transformers: [
+      dateTransformer(['created', 'updated', 'publishedAt'])
+    ]
+  });
+
+  return (
+    <div>
+      {posts?.map(post => (
+        <div key={post.id}>
+          <h3>{post.title}</h3>
+          <p>Published: {post.publishedAt.toLocaleDateString()}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### Custom Transformers
+
+Create your own transformers to apply custom data transformations:
+
+```tsx
+import { useCollection, dateTransformer } from 'pocketbase-react-hooks';
+import type { RecordTransformer } from 'pocketbase-react-hooks';
+
+interface Post extends RecordModel {
+  title: string;
+  content: string;
+  status: 'draft' | 'published' | 'archived';
+}
+
+const uppercaseTransformer: RecordTransformer<Post> = (record) => ({
+  ...record,
+  title: record.title.toUpperCase(),
+});
+
+const statusNormalizer: RecordTransformer<Post> = (record) => ({
+  ...record,
+  status: record.status.toLowerCase() as 'draft' | 'published' | 'archived',
+});
+
+function PostsList() {
+  const { data: posts } = useCollection<Post>('posts', {
+    transformers: [
+      dateTransformer(),
+      uppercaseTransformer,
+      statusNormalizer,
+    ]
+  });
+
+  return (
+    <div>
+      {posts?.map(post => (
+        <div key={post.id}>
+          <h3>{post.title}</h3>
+          <span>{post.status}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### Transformer Composition
+
+Transformers are applied in sequence, allowing you to compose multiple transformations:
+
+```tsx
+import { useCollection, dateTransformer } from 'pocketbase-react-hooks';
+
+const trimWhitespace: RecordTransformer<Post> = (record) => ({
+  ...record,
+  title: record.title.trim(),
+  content: record.content.trim(),
+});
+
+const addComputedFields: RecordTransformer<Post> = (record) => ({
+  ...record,
+  excerpt: record.content.substring(0, 100) + '...',
+  wordCount: record.content.split(' ').length,
+});
+
+function PostsList() {
+  const { data: posts } = useCollection<Post>('posts', {
+    transformers: [
+      dateTransformer(),
+      trimWhitespace,
+      addComputedFields,
+    ]
+  });
+
+  return <div>{/* ... */}</div>;
+}
+```
+
+### Disabling Transformers
+
+If you don't want any transformations (including the default date transformer), pass an empty array:
+
+```tsx
+import { useCollection } from 'pocketbase-react-hooks';
+
+function PostsList() {
+  const { data: posts } = useCollection('posts', {
+    transformers: [] // No transformations applied
+  });
+
+  return <div>{/* ... */}</div>;
+}
+```
+
+### Error Handling
+
+Transformers include built-in error handling. If a transformer throws an error, the original record is returned unchanged, and the error is logged to the console:
+
+```tsx
+const faultyTransformer: RecordTransformer<Post> = (record) => {
+  if (!record.title) {
+    throw new Error('Title is required');
+  }
+  return record;
+};
+
+function PostsList() {
+  const { data: posts } = useCollection<Post>('posts', {
+    transformers: [
+      dateTransformer(),
+      faultyTransformer, // If this fails, original record is returned
+    ]
+  });
+
+  return <div>{/* ... */}</div>;
+}
+```
+
+### Real-time Updates
+
+Transformers are automatically applied to:
+- Initial data fetch
+- Real-time subscription events (create, update)
+
+This ensures data consistency across all updates:
+
+```tsx
+function PostsList() {
+  const { data: posts } = useCollection<Post>('posts', {
+    transformers: [dateTransformer()],
+  });
+
+  return <div>{/* All posts have Date objects, even from real-time updates */}</div>;
+}
+```
+
 ## Real-time Features
 
 All hooks support real-time updates through PocketBase subscriptions:
 
-- `useCollection` automatically updates when records are created, updated, or deleted (can be disabled with `subscribe: false`)
+- `useCollection` automatically updates when records are created, updated, or deleted (can be disabled with `realtime: false`)
 - `useRecord` automatically updates when the specific record changes
 - `useAuth` automatically updates when authentication state changes
 
-**Note:** Real-time subscriptions are enabled by default but can be disabled using the `subscribe` option for better performance when real-time updates are not needed.
+**Note:** Real-time subscriptions are enabled by default but can be disabled using the `realtime` option for better performance when real-time updates are not needed.
 
 ## Request Cancellation with requestKey
 

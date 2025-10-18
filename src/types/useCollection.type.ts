@@ -7,7 +7,7 @@ import type { UseCommonOptions } from './useCommon.type';
  *
  * @template T - The record type extending RecordModel
  */
-export interface UseCollectionOptions<T extends RecordModel> extends UseCommonOptions {
+export interface UseCollectionOptions<T extends RecordModel> extends UseCommonOptions<T> {
   /**
    * PocketBase filter query (e.g., 'published = true')
    */
@@ -46,7 +46,7 @@ export interface UseCollectionOptions<T extends RecordModel> extends UseCommonOp
   /**
    * Enable real-time subscription to collection changes (default: true)
    */
-  subscribe?: boolean;
+  realtime?: boolean;
 
   /**
    * Request key for cancellation via pb.cancelRequest()

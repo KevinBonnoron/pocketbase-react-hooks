@@ -1,6 +1,4 @@
-import '@testing-library/jest-dom';
 import { render, screen } from '@testing-library/react';
-import type PocketBase from 'pocketbase';
 import { describe, expect, it } from 'vitest';
 import { PocketBaseContext, usePocketBaseContext } from '../src/context/PocketBaseContext';
 import { PocketBaseProvider } from '../src/providers/PocketBaseProvider';
