@@ -336,6 +336,7 @@ describe('useAuth', () => {
           {
             email: 'new@example.com',
             password: 'password',
+            confirmPassword: 'password',
             ...additionalData,
           },
           rest,

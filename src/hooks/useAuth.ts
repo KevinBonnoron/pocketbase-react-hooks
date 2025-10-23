@@ -121,6 +121,7 @@ export function useAuth<User extends AuthRecord>({ collectionName = 'users', rea
             {
               email,
               password,
+              confirmPassword: password,
               ...additionalData,
             },
             rest,
