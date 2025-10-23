@@ -13,24 +13,26 @@ function App() {
 }
 
 function DeleteMutationExample() {
-  const { mutate: deletePost, isPending, isSuccess, error } = useDeleteMutation('posts');
   const { data: posts } = useCollection('posts', { perPage: 10 });
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const { mutateAsync: deletePost, isPending, isSuccess, error } = useDeleteMutation('posts', deletingId);
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this post?')) {
-      setDeletingId(id);
-      try {
-        const success = await deletePost(id);
-        if (success) {
-          console.log('Post deleted successfully');
-        }
-      } catch (err) {
-        console.error('Failed to delete post:', err);
-      } finally {
-        setDeletingId(null);
-      }
+  const handleDelete = async (postId: string) => {
+    setDeletingId(postId);
+    try {
+      await deletePost();
+      console.log('Post deleted successfully');
+      setDeletingId(null);
+    } catch (err) {
+      console.error('Failed to delete post:', err);
+      setDeletingId(null);
+    }
+  };
+
+  const confirmDelete = (post: RecordModel) => {
+    if (window.confirm(`Are you sure you want to delete "${post.title}"?`)) {
+      handleDelete(post.id);
     }
   };
 
@@ -53,15 +55,14 @@ function DeleteMutationExample() {
             <div style={{ marginTop: '10px' }}>
               <button
                 type="button"
-                onClick={() => handleDelete(post.id)}
+                onClick={() => confirmDelete(post)}
                 disabled={isPending && deletingId === post.id}
                 style={{
-                  backgroundColor: deletingId === post.id ? '#ff6b6b' : '#dc3545',
+                  backgroundColor: '#dc3545',
                   color: 'white',
                   border: 'none',
-                  padding: '5px 10px',
-                  borderRadius: '4px',
-                  cursor: deletingId === post.id ? 'not-allowed' : 'pointer',
+                  padding: '8px 16px',
+                  cursor: isPending && deletingId === post.id ? 'not-allowed' : 'pointer',
                 }}
               >
                 {isPending && deletingId === post.id ? 'Deleting...' : 'Delete'}

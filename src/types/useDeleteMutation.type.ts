@@ -5,12 +5,18 @@ import type { CommonOptions } from 'pocketbase';
  */
 export interface UseDeleteMutationResult {
   /**
-   * Function to delete a record. Returns true on success, false on error.
+   * Function to delete a record synchronously. Triggers the mutation but doesn't wait for completion.
    *
-   * @param id - The ID of the record to delete
    * @param options - Optional PocketBase common options (headers, fetch, etc.)
    */
-  mutate: (id: string, options?: CommonOptions) => Promise<boolean>;
+  mutate: (options?: CommonOptions) => void;
+
+  /**
+   * Function to delete a record asynchronously. Returns a promise that resolves when deletion is complete.
+   *
+   * @param options - Optional PocketBase common options (headers, fetch, etc.)
+   */
+  mutateAsync: (options?: CommonOptions) => Promise<void>;
 
   /**
    * True when the mutation is in progress

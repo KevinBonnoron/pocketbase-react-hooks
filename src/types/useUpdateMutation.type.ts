@@ -7,13 +7,20 @@ import type { RecordModel, RecordOptions } from 'pocketbase';
  */
 export interface UseUpdateMutationResult<Record extends RecordModel> {
   /**
-   * Function to update an existing record. Returns the updated record on success, null on error.
+   * Function to update an existing record synchronously. Triggers the mutation but doesn't wait for completion.
    *
-   * @param id - The ID of the record to update
    * @param bodyParams - Partial record data to update
    * @param options - Optional PocketBase record options (expand, fields, etc.)
    */
-  mutate: (id: string, bodyParams: Partial<Record>, options?: RecordOptions) => Promise<Record | null>;
+  mutate: (bodyParams: Partial<Record>, options?: RecordOptions) => void;
+
+  /**
+   * Function to update an existing record asynchronously. Returns a promise that resolves with the updated record.
+   *
+   * @param bodyParams - Partial record data to update
+   * @param options - Optional PocketBase record options (expand, fields, etc.)
+   */
+  mutateAsync: (bodyParams: Partial<Record>, options?: RecordOptions) => Promise<Record>;
 
   /**
    * True when the mutation is in progress
