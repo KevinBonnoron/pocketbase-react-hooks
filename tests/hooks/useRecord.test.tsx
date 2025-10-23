@@ -424,7 +424,7 @@ describe('useRecord', () => {
         return Promise.resolve(() => {});
       });
 
-      const faultyTransformer = (record: RecordModel) => {
+      const faultyTransformer = (_record: RecordModel) => {
         throw new Error('Transformer error');
       };
 
@@ -477,7 +477,7 @@ describe('useRecord', () => {
 
       const transformer2 = (record: RecordModel) => ({
         ...record,
-        title: record.title + '!',
+        title: `${record.title}!`,
       });
 
       const wrapper = createWrapper(mockPocketBase);
