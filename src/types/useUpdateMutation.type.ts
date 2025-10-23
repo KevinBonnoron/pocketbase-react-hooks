@@ -1,11 +1,12 @@
 import type { RecordModel, RecordOptions } from 'pocketbase';
+import type { UseMutationCommonOptions } from './useMutationCommon.type';
 
 /**
  * Result type returned by useUpdateMutation hook.
  *
  * @template Record - The record type extending RecordModel
  */
-export interface UseUpdateMutationResult<Record extends RecordModel> {
+export interface UseUpdateMutationResult<Record extends RecordModel> extends UseMutationCommonOptions {
   /**
    * Function to update an existing record synchronously. Triggers the mutation but doesn't wait for completion.
    *
@@ -21,19 +22,4 @@ export interface UseUpdateMutationResult<Record extends RecordModel> {
    * @param options - Optional PocketBase record options (expand, fields, etc.)
    */
   mutateAsync: (bodyParams: Partial<Record>, options?: RecordOptions) => Promise<Record>;
-
-  /**
-   * True when the mutation is in progress
-   */
-  isPending: boolean;
-
-  /**
-   * True when the mutation completed successfully (not pending and no error)
-   */
-  isSuccess: boolean;
-
-  /**
-   * Error message if the mutation failed, null otherwise
-   */
-  error: string | null;
 }

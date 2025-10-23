@@ -13,37 +13,38 @@ function App() {
 }
 
 function CreateMutationExample() {
-  const { mutate: createPost, isPending, isSuccess, error } = useCreateMutation('posts');
   const { data: posts } = useCollection('posts', { perPage: 10 });
 
+  const { mutateAsync: createPost, isPending, isSuccess, isError, error } = useCreateMutation('posts');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [status, setStatus] = useState<'draft' | 'published'>('draft');
 
   const handleCreate = async (e: FormEvent) => {
     e.preventDefault();
+    if (!title.trim() || !content.trim()) return;
+
     try {
       const newPost = await createPost({
-        title,
-        content,
+        title: title.trim(),
+        content: content.trim(),
         status,
       });
       console.log('Post created:', newPost);
       setTitle('');
       setContent('');
+      setStatus('draft');
     } catch (err) {
       console.error('Failed to create post:', err);
     }
   };
 
-  if (error) return <div>Error: {error}</div>;
-
   return (
     <div>
-      <h2>Create Post</h2>
+      <h2>Create New Post</h2>
 
       <form onSubmit={handleCreate} style={{ border: '1px solid #ccc', padding: '20px', marginBottom: '20px' }}>
-        <h3>Create New Post</h3>
+        <h3>Create Post</h3>
         <div>
           <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Post title" required />
         </div>
@@ -60,6 +61,7 @@ function CreateMutationExample() {
           {isPending ? 'Creating...' : 'Create Post'}
         </button>
         {isSuccess && <p style={{ color: 'green' }}>Post created successfully!</p>}
+        {isError && error && <p style={{ color: 'red' }}>Error: {error}</p>}
       </form>
 
       <div>

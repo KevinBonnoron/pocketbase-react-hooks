@@ -23,6 +23,7 @@ describe('useUpdateMutation', () => {
     expect(result.current.isPending).toBe(false);
     expect(result.current.error).toBe(null);
     expect(result.current.isSuccess).toBe(true);
+    expect(result.current.isError).toBe(false);
     expect(typeof result.current.mutate).toBe('function');
     expect(typeof result.current.mutateAsync).toBe('function');
   });
@@ -90,6 +91,7 @@ describe('useUpdateMutation', () => {
         expect(result.current.error).toEqual('Update failed');
         expect(result.current.isPending).toBe(false);
         expect(result.current.isSuccess).toBe(false);
+        expect(result.current.isError).toBe(true);
       });
     });
 
@@ -106,6 +108,7 @@ describe('useUpdateMutation', () => {
         expect(result.current.error).toBe('Error updating record');
         expect(result.current.isPending).toBe(false);
         expect(result.current.isSuccess).toBe(false);
+        expect(result.current.isError).toBe(true);
       });
     });
 
@@ -188,6 +191,7 @@ describe('useUpdateMutation', () => {
         expect(result.current.error).toEqual('Update failed');
         expect(result.current.isPending).toBe(false);
         expect(result.current.isSuccess).toBe(false);
+        expect(result.current.isError).toBe(true);
       });
     });
 
@@ -204,6 +208,7 @@ describe('useUpdateMutation', () => {
         expect(result.current.error).toBe('Error updating record');
         expect(result.current.isPending).toBe(false);
         expect(result.current.isSuccess).toBe(false);
+        expect(result.current.isError).toBe(true);
       });
     });
   });

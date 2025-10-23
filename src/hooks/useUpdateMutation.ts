@@ -65,6 +65,7 @@ export function useUpdateMutation<Record extends RecordModel>(collectionName: st
       mutate,
       mutateAsync,
       isPending,
+      isError: !!error,
       error,
       isSuccess: !isPending && !error,
     }),

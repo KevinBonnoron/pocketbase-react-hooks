@@ -16,16 +16,20 @@ function DeleteMutationExample() {
   const { data: posts } = useCollection('posts', { perPage: 10 });
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const { mutateAsync: deletePost, isPending, isSuccess, error } = useDeleteMutation('posts', deletingId);
+  const { mutateAsync: deletePost, isPending, isSuccess, isError, error } = useDeleteMutation('posts', deletingId);
 
   const handleDelete = async (postId: string) => {
+    if (isPending) {
+      return;
+    }
+
     setDeletingId(postId);
     try {
       await deletePost();
       console.log('Post deleted successfully');
-      setDeletingId(null);
     } catch (err) {
       console.error('Failed to delete post:', err);
+    } finally {
       setDeletingId(null);
     }
   };
@@ -36,7 +40,7 @@ function DeleteMutationExample() {
     }
   };
 
-  if (error) return <div>Error: {error}</div>;
+  if (isError) return <div>Error: {error}</div>;
 
   return (
     <div>
@@ -56,16 +60,16 @@ function DeleteMutationExample() {
               <button
                 type="button"
                 onClick={() => confirmDelete(post)}
-                disabled={isPending && deletingId === post.id}
+                disabled={isPending}
                 style={{
                   backgroundColor: '#dc3545',
                   color: 'white',
                   border: 'none',
                   padding: '8px 16px',
-                  cursor: isPending && deletingId === post.id ? 'not-allowed' : 'pointer',
+                  cursor: isPending ? 'not-allowed' : 'pointer',
                 }}
               >
-                {isPending && deletingId === post.id ? 'Deleting...' : 'Delete'}
+                {isPending ? 'Deleting...' : 'Delete'}
               </button>
             </div>
           </div>

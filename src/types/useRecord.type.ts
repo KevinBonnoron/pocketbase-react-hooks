@@ -1,13 +1,13 @@
 import type { RecordModel } from 'pocketbase';
 import type { QueryResult } from './query-result.type';
-import type { UseCommonOptions } from './useCommon.type';
+import type { UseQueryCommonOptions } from './useQueryCommon.type';
 
 /**
  * Options for configuring the useRecord hook.
  *
  * @template T - The record type extending RecordModel
  */
-export interface UseRecordOptions<T extends RecordModel> extends UseCommonOptions<T> {
+export interface UseRecordOptions<T extends RecordModel> extends UseQueryCommonOptions<T> {
   /**
    * Default value to use before data is loaded
    */

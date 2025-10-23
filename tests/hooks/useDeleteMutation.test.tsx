@@ -22,6 +22,7 @@ describe('useDeleteMutation', () => {
     expect(result.current.isPending).toBe(false);
     expect(result.current.error).toBe(null);
     expect(result.current.isSuccess).toBe(true);
+    expect(result.current.isError).toBe(false);
     expect(typeof result.current.mutate).toBe('function');
     expect(typeof result.current.mutateAsync).toBe('function');
   });
@@ -82,6 +83,7 @@ describe('useDeleteMutation', () => {
         expect(result.current.error).toEqual('Delete failed');
         expect(result.current.isPending).toBe(false);
         expect(result.current.isSuccess).toBe(false);
+        expect(result.current.isError).toBe(true);
       });
     });
 
@@ -98,6 +100,7 @@ describe('useDeleteMutation', () => {
         expect(result.current.error).toBe('Error deleting record');
         expect(result.current.isPending).toBe(false);
         expect(result.current.isSuccess).toBe(false);
+        expect(result.current.isError).toBe(true);
       });
     });
 
@@ -178,6 +181,7 @@ describe('useDeleteMutation', () => {
         expect(result.current.error).toEqual('Delete failed');
         expect(result.current.isPending).toBe(false);
         expect(result.current.isSuccess).toBe(false);
+        expect(result.current.isError).toBe(true);
       });
     });
 
@@ -194,6 +198,7 @@ describe('useDeleteMutation', () => {
         expect(result.current.error).toBe('Error deleting record');
         expect(result.current.isPending).toBe(false);
         expect(result.current.isSuccess).toBe(false);
+        expect(result.current.isError).toBe(true);
       });
     });
   });

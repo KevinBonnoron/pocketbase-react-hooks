@@ -12,12 +12,14 @@ import { usePocketBase } from './usePocketBase';
  *
  * @example
  * ```tsx
- * const { mutate, isPending, isSuccess, error } = useCreateMutation<Post>('posts');
+ * const { mutateAsync, isPending, isSuccess, isError, error } = useCreateMutation<Post>('posts');
  *
  * const handleCreate = async () => {
- *   const newPost = await mutate({ title: 'Hello', content: 'World' });
- *   if (newPost) {
+ *   try {
+ *     const newPost = await mutateAsync({ title: 'Hello', content: 'World' });
  *     console.log('Created:', newPost);
+ *   } catch (err) {
+ *     console.error('Failed to create post:', err);
  *   }
  * };
  * ```
@@ -28,16 +30,17 @@ export function useCreateMutation<Record extends RecordModel>(collectionName: st
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const mutate = useCallback(
-    async (bodyParams: Partial<Record>, options?: RecordOptions): Promise<Record | null> => {
+  const mutateAsync = useCallback(
+    async (bodyParams: Partial<Record>, options?: RecordOptions): Promise<Record> => {
       try {
         setIsPending(true);
         setError(null);
-        const record = await recordService.create(bodyParams, options);
+        const record = options ? await recordService.create(bodyParams, options) : await recordService.create(bodyParams);
         return record as Record;
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Error creating record');
-        return null;
+        const errorMessage = err instanceof Error ? err.message : 'Error creating record';
+        setError(errorMessage);
+        throw new Error(errorMessage);
       } finally {
         setIsPending(false);
       }
@@ -45,13 +48,24 @@ export function useCreateMutation<Record extends RecordModel>(collectionName: st
     [recordService],
   );
 
+  const mutate = useCallback(
+    (bodyParams: Partial<Record>, options?: RecordOptions): void => {
+      mutateAsync(bodyParams, options).catch(() => {
+        // Error is already handled in mutateAsync
+      });
+    },
+    [mutateAsync],
+  );
+
   return useMemo(
     (): UseCreateMutationResult<Record> => ({
       mutate,
+      mutateAsync,
       isPending,
+      isError: !!error,
       error,
       isSuccess: !isPending && !error,
     }),
-    [mutate, isPending, error],
+    [mutate, mutateAsync, isPending, error],
   );
 }

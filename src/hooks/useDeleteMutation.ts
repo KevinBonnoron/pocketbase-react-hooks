@@ -63,6 +63,7 @@ export function useDeleteMutation<Record extends RecordModel = RecordModel>(coll
       mutate,
       mutateAsync,
       isPending,
+      isError: !!error,
       error,
       isSuccess: !isPending && !error,
     }),
