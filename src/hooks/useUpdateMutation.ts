@@ -8,6 +8,7 @@ import { usePocketBase } from './usePocketBase';
  *
  * @template Record - The record type extending RecordModel
  * @param collectionName - The name of the PocketBase collection
+ * @param id - The ID of the record to update
  * @returns An object containing the mutate function and mutation state
  *
  * @example
@@ -22,36 +23,52 @@ import { usePocketBase } from './usePocketBase';
  * };
  * ```
  */
-export function useUpdateMutation<Record extends RecordModel>(collectionName: string): UseUpdateMutationResult<Record> {
+export function useUpdateMutation<Record extends RecordModel>(collectionName: string, id: Record['id'] | null): UseUpdateMutationResult<Record> {
   const pb = usePocketBase();
   const recordService = useMemo(() => pb.collection(collectionName), [pb, collectionName]);
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const mutate = useCallback(
-    async (id: string, bodyParams: Partial<Record>, options?: RecordOptions): Promise<Record | null> => {
+  const mutateAsync = useCallback(
+    async (bodyParams: Partial<Record>, options?: RecordOptions): Promise<Record> => {
+      if (!id) {
+        throw new Error('ID is required');
+      }
+
       try {
         setIsPending(true);
         setError(null);
         const record = options ? await recordService.update(id, bodyParams, options) : await recordService.update(id, bodyParams);
         return record as Record;
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Error updating record');
-        return null;
+        const errorMessage = err instanceof Error ? err.message : 'Error updating record';
+        setError(errorMessage);
+        throw new Error(errorMessage);
       } finally {
         setIsPending(false);
       }
     },
-    [recordService],
+    [recordService, id],
+  );
+
+  const mutate = useCallback(
+    (bodyParams: Partial<Record>, options?: RecordOptions): void => {
+      mutateAsync(bodyParams, options).catch(() => {
+        // Error is already handled in mutateAsync
+      });
+    },
+    [mutateAsync],
   );
 
   return useMemo(
     (): UseUpdateMutationResult<Record> => ({
       mutate,
+      mutateAsync,
       isPending,
+      isError: !!error,
       error,
       isSuccess: !isPending && !error,
     }),
-    [mutate, isPending, error],
+    [mutate, mutateAsync, isPending, error],
   );
 }

@@ -1,4 +1,4 @@
-import type { CommonOptions } from 'pocketbase';
+import type { CommonOptions, RecordModel } from 'pocketbase';
 import { useCallback, useMemo, useState } from 'react';
 import type { UseDeleteMutationResult } from '../types';
 import { usePocketBase } from './usePocketBase';
@@ -7,6 +7,7 @@ import { usePocketBase } from './usePocketBase';
  * Hook for deleting records from a PocketBase collection.
  *
  * @param collectionName - The name of the PocketBase collection
+ * @param id - The ID of the record to delete
  * @returns An object containing the mutate function and mutation state
  *
  * @example
@@ -21,36 +22,51 @@ import { usePocketBase } from './usePocketBase';
  * };
  * ```
  */
-export function useDeleteMutation(collectionName: string): UseDeleteMutationResult {
+export function useDeleteMutation<Record extends RecordModel = RecordModel>(collectionName: string, id: Record['id'] | null): UseDeleteMutationResult {
   const pb = usePocketBase();
   const recordService = useMemo(() => pb.collection(collectionName), [pb, collectionName]);
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const mutate = useCallback(
-    async (id: string, options?: CommonOptions): Promise<boolean> => {
+  const mutateAsync = useCallback(
+    async (options?: CommonOptions): Promise<void> => {
+      if (!id) {
+        throw new Error('ID is required');
+      }
+
       try {
         setIsPending(true);
         setError(null);
         await recordService.delete(id, options);
-        return true;
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Error deleting record');
-        return false;
+        const errorMessage = err instanceof Error ? err.message : 'Error deleting record';
+        setError(errorMessage);
+        throw new Error(errorMessage);
       } finally {
         setIsPending(false);
       }
     },
-    [recordService],
+    [recordService, id],
+  );
+
+  const mutate = useCallback(
+    (options?: CommonOptions): void => {
+      mutateAsync(options).catch(() => {
+        // Error is already handled in mutateAsync
+      });
+    },
+    [mutateAsync],
   );
 
   return useMemo(
     (): UseDeleteMutationResult => ({
       mutate,
+      mutateAsync,
       isPending,
+      isError: !!error,
       error,
       isSuccess: !isPending && !error,
     }),
-    [mutate, isPending, error],
+    [mutate, mutateAsync, isPending, error],
   );
 }

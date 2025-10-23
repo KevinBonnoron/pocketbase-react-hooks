@@ -1,7 +1,7 @@
 import type { RecordModel } from 'pocketbase';
 import type { RecordTransformer } from './record-transformer.type';
 
-export interface UseCommonOptions<T extends RecordModel> {
+export interface UseQueryCommonOptions<T extends RecordModel> {
   /**
    * Expand related records (e.g., 'author,comments')
    */

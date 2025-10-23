@@ -1,13 +1,13 @@
 import type { RecordModel } from 'pocketbase';
 import type { QueryResult } from './query-result.type';
-import type { UseCommonOptions } from './useCommon.type';
+import type { UseQueryCommonOptions } from './useQueryCommon.type';
 
 /**
  * Options for configuring the useCollection hook.
  *
  * @template T - The record type extending RecordModel
  */
-export interface UseCollectionOptions<T extends RecordModel> extends UseCommonOptions<T> {
+export interface UseCollectionOptions<T extends RecordModel> extends UseQueryCommonOptions<T> {
   /**
    * PocketBase filter query (e.g., 'published = true')
    */

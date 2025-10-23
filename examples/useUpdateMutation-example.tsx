@@ -13,10 +13,10 @@ function App() {
 }
 
 function UpdateMutationExample() {
-  const { mutate: updatePost, isPending, isSuccess, error } = useUpdateMutation('posts');
   const { data: posts } = useCollection('posts', { perPage: 10 });
 
   const [editingId, setEditingId] = useState<string | null>(null);
+  const { mutateAsync: updatePost, isPending, isSuccess, isError, error } = useUpdateMutation('posts', editingId);
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
   const [editStatus, setEditStatus] = useState<'draft' | 'published'>('draft');
@@ -26,7 +26,7 @@ function UpdateMutationExample() {
     if (!editingId) return;
 
     try {
-      const updatedPost = await updatePost(editingId, {
+      const updatedPost = await updatePost({
         title: editTitle,
         content: editContent,
         status: editStatus,
@@ -52,8 +52,6 @@ function UpdateMutationExample() {
     setEditTitle('');
     setEditContent('');
   };
-
-  if (error) return <div>Error: {error}</div>;
 
   return (
     <div>
@@ -81,6 +79,7 @@ function UpdateMutationExample() {
             Cancel
           </button>
           {isSuccess && <p style={{ color: 'green' }}>Post updated successfully!</p>}
+          {isError && error && <p style={{ color: 'red' }}>Error: {error}</p>}
         </form>
       )}
 

@@ -738,7 +738,7 @@ describe('useCollection', () => {
         return Promise.resolve(() => {});
       });
 
-      const faultyTransformer = (record: any) => {
+      const faultyTransformer = (_record: any) => {
         throw new Error('Transformer error');
       };
 
