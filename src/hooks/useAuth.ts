@@ -112,11 +112,11 @@ export function useAuth<User extends AuthRecord>({ collectionName = 'users', rea
 
   const signUp = useMemo(
     () => ({
-      email: async (email: string, password: string, options: RecordOptions & { additionalData?: Record<string, unknown> } = {}) => {
+      email: async (email: string, password: string, options: RecordOptions & { additionalData?: Record<string, unknown>; autoLogin?: boolean } = {}) => {
         try {
           setIsLoading(true);
           setError(null);
-          const { additionalData, ...rest } = options;
+          const { additionalData, autoLogin = false, ...rest } = options;
           const record: User = await recordService.create(
             {
               email,
@@ -126,6 +126,10 @@ export function useAuth<User extends AuthRecord>({ collectionName = 'users', rea
             },
             rest,
           );
+
+          if (record && autoLogin) {
+            setUser(record);
+          }
 
           return record;
         } catch (err) {

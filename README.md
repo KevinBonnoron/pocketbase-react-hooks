@@ -151,6 +151,7 @@ interface RecordOptions {
 ```typescript
 interface SignUpOptions extends RecordOptions {
   additionalData?: Record<string, unknown>; // Additional user data
+  autoLogin?: boolean; // Whether to automatically log in the user
 }
 ```
 
@@ -176,6 +177,15 @@ await signUp.email('user@example.com', 'password', {
     preferences: { theme: 'dark' }
   },
   expand: 'profile'
+});
+
+// Sign up with auto-login
+await signUp.email('user@example.com', 'password', {
+  autoLogin: true,
+  additionalData: {
+    name: 'John Doe',
+    role: 'user'
+  }
 });
 ```
 

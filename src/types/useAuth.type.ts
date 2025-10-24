@@ -74,7 +74,7 @@ export interface UseAuthResult<User extends AuthRecord> {
     /**
      * Sign up with email and password
      */
-    email: (email: string, password: string, options?: RecordOptions & { additionalData?: Record<string, unknown> }) => Promise<User | null>;
+    email: (email: string, password: string, options?: RecordOptions & { additionalData?: Record<string, unknown>; autoLogin?: boolean }) => Promise<User | null>;
   };
 
   /**

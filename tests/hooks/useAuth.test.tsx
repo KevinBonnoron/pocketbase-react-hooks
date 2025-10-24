@@ -210,9 +210,9 @@ describe('useAuth', () => {
 
   describe('signIn', () => {
     it.each`
-      scenario          | options                  | expected
-      ${'basic'}        | ${undefined}             | ${undefined}
-      ${'with options'} | ${{ expand: 'profile' }} | ${{ expand: 'profile' }}
+      scenario         | options                  | expected
+      ${'basic'}       | ${undefined}             | ${undefined}
+      ${'with expand'} | ${{ expand: 'profile' }} | ${{ expand: 'profile' }}
     `('should handle signIn with email $scenario', async ({ options, expected }) => {
       const mockAuthResponse = {
         token: 'mock-token',
@@ -264,9 +264,9 @@ describe('useAuth', () => {
     });
 
     it.each`
-      scenario          | options                  | expected
-      ${'basic'}        | ${undefined}             | ${undefined}
-      ${'with options'} | ${{ expand: 'profile' }} | ${{ expand: 'profile' }}
+      scenario         | options                  | expected
+      ${'basic'}       | ${undefined}             | ${undefined}
+      ${'with expand'} | ${{ expand: 'profile' }} | ${{ expand: 'profile' }}
     `('should handle signIn with OTP $scenario', async ({ options, expected }) => {
       const mockAuthResponse = {
         token: 'mock-token',
@@ -311,18 +311,24 @@ describe('useAuth', () => {
   });
 
   describe('signUp', () => {
-    it.each`
-      scenario          | options                                                        | expected
-      ${'basic'}        | ${undefined}                                                   | ${undefined}
-      ${'with options'} | ${{ expand: 'profile', additionalData: { name: 'John Doe' } }} | ${{ expand: 'profile', additionalData: { name: 'John Doe' } }}
-    `('should handle signUp with email $scenario', async ({ options, expected }) => {
-      const mockCreate = vi.fn().mockResolvedValue({
-        id: '1',
-        email: 'new@example.com',
-        name: 'John Doe',
-      });
+    const mockUser = {
+      id: '1',
+      email: 'new@example.com',
+      name: 'John Doe',
+    };
 
-      mockPocketBase.collection('users').create = mockCreate;
+    it.each`
+      scenario                 | options                                     | expectedUser | expectedIsAuthenticated
+      ${'basic'}               | ${undefined}                                | ${null}      | ${false}
+      ${'with expand'}         | ${{ expand: 'profile' }}                    | ${null}      | ${false}
+      ${'with additionalData'} | ${{ additionalData: { name: 'John Doe' } }} | ${null}      | ${false}
+      ${'with autoLogin'}      | ${{ autoLogin: true }}                      | ${mockUser}  | ${true}
+    `('should handle signUp with email $scenario', async ({ options, expectedUser, expectedIsAuthenticated }) => {
+      const mockCreate = vi.fn().mockResolvedValue(mockUser);
+      mockPocketBase.collection = vi.fn().mockReturnValue({
+        create: mockCreate,
+        subscribe: vi.fn(() => Promise.resolve(() => {})),
+      });
 
       const wrapper = createWrapper(mockPocketBase);
 
@@ -331,7 +337,7 @@ describe('useAuth', () => {
       await result.current.signUp.email('new@example.com', 'password', options);
 
       return waitFor(() => {
-        const { additionalData, ...rest } = expected ?? {};
+        const { additionalData, autoLogin: _autoLogin, ...rest } = options ?? {};
         expect(mockCreate).toHaveBeenCalledWith(
           {
             email: 'new@example.com',
@@ -341,15 +347,19 @@ describe('useAuth', () => {
           },
           rest,
         );
+        expect(result.current.user).toEqual(expectedUser);
+        expect(result.current.isAuthenticated).toBe(expectedIsAuthenticated);
+        expect(result.current.isLoading).toBe(false);
+        expect(result.current.error).toBe(null);
       });
     });
   });
 
   describe('passwordReset', () => {
     it.each`
-      scenario          | options                  | expected
-      ${'basic'}        | ${undefined}             | ${undefined}
-      ${'with options'} | ${{ expand: 'profile' }} | ${{ expand: 'profile' }}
+      scenario         | options                  | expected
+      ${'basic'}       | ${undefined}             | ${undefined}
+      ${'with expand'} | ${{ expand: 'profile' }} | ${{ expand: 'profile' }}
     `('should request password reset $scenario', async ({ options, expected }) => {
       const mockPocketBase = createMockAuthPocketBase();
       const mockRequestPasswordReset = vi.fn().mockResolvedValue(undefined);
@@ -376,9 +386,9 @@ describe('useAuth', () => {
     });
 
     it.each`
-      scenario          | options                  | expected
-      ${'basic'}        | ${undefined}             | ${undefined}
-      ${'with options'} | ${{ expand: 'profile' }} | ${{ expand: 'profile' }}
+      scenario         | options                  | expected
+      ${'basic'}       | ${undefined}             | ${undefined}
+      ${'with expand'} | ${{ expand: 'profile' }} | ${{ expand: 'profile' }}
     `('should confirm password reset $scenario', async ({ options, expected }) => {
       const mockPocketBase = createMockAuthPocketBase();
       const mockConfirmPasswordReset = vi.fn().mockResolvedValue(undefined);
@@ -405,9 +415,9 @@ describe('useAuth', () => {
     });
 
     it.each`
-      scenario          | options
-      ${'basic'}        | ${undefined}
-      ${'with options'} | ${{ expand: 'profile' }}
+      scenario         | options
+      ${'basic'}       | ${undefined}
+      ${'with expand'} | ${{ expand: 'profile' }}
     `('should handle password reset request error $scenario', async ({ options }) => {
       const mockPocketBase = createMockAuthPocketBase();
       const mockError = new Error('Password reset failed');
@@ -434,9 +444,9 @@ describe('useAuth', () => {
     });
 
     it.each`
-      scenario          | options
-      ${'basic'}        | ${undefined}
-      ${'with options'} | ${{ expand: 'profile' }}
+      scenario         | options
+      ${'basic'}       | ${undefined}
+      ${'with expand'} | ${{ expand: 'profile' }}
     `('should handle password reset confirm error $scenario', async ({ options }) => {
       const mockPocketBase = createMockAuthPocketBase();
       const mockError = new Error('Password reset confirmation failed');
@@ -465,9 +475,9 @@ describe('useAuth', () => {
 
   describe('verification', () => {
     it.each`
-      scenario          | options                  | expected
-      ${'basic'}        | ${undefined}             | ${undefined}
-      ${'with options'} | ${{ expand: 'profile' }} | ${{ expand: 'profile' }}
+      scenario         | options                  | expected
+      ${'basic'}       | ${undefined}             | ${undefined}
+      ${'with expand'} | ${{ expand: 'profile' }} | ${{ expand: 'profile' }}
     `('should request email verification $scenario', async ({ options, expected }) => {
       const mockPocketBase = createMockAuthPocketBase();
       const mockRequestVerification = vi.fn().mockResolvedValue(undefined);
