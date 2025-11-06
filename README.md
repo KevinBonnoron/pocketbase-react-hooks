@@ -73,6 +73,38 @@ function MyComponent() {
 }
 ```
 
+## TypeScript Support with pocketbase-typegen
+
+This library supports automatic type inference when used with [pocketbase-typegen](https://github.com/patmood/pocketbase-typegen), providing end-to-end type safety for your PocketBase collections.
+
+```typescript
+import PocketBase from 'pocketbase';
+import { PocketBaseProvider, TypedPocketBase, useCollection } from 'pocketbase-react-hooks';
+import type { Database } from './pocketbase-types';
+
+const pb = new PocketBase('http://127.0.0.1:8090') as TypedPocketBase<Database>;
+
+function App() {
+  return (
+    <PocketBaseProvider<Database> pocketBase={pb}>
+      <Posts />
+    </PocketBaseProvider>
+  );
+}
+
+function Posts() {
+  const { data: posts } = useCollection('posts');
+
+  return posts.map(post => (
+    <div key={post.id}>
+      <h2>{post.title}</h2>
+    </div>
+  ));
+}
+```
+
+**See the [Typed Database Guide](./docs/TYPED-DATABASE.md) for complete documentation.**
+
 ## Available Hooks
 
 ### `useAuth<User>()`

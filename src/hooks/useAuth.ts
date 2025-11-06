@@ -1,7 +1,14 @@
-import type { AuthRecord, OAuth2AuthConfig, RecordOptions } from 'pocketbase';
+import type { AuthRecord, OAuth2AuthConfig, RecordModel, RecordOptions } from 'pocketbase';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { UseAuthOptions, UseAuthResult } from '../types';
+import type { AuthCollectionRecord, UseAuthOptions, UseAuthResult } from '../types';
 import { usePocketBase } from './usePocketBase';
+
+export function useAuth<TDatabase extends Record<string, RecordModel>, TCollection extends keyof TDatabase & string = 'users'>({
+  collectionName = 'users' as TCollection,
+  realtime = true,
+}: UseAuthOptions = {}): UseAuthResult<AuthCollectionRecord<TDatabase, TCollection>>;
+
+export function useAuth<TUser extends AuthRecord>({ collectionName, realtime }: UseAuthOptions): UseAuthResult<TUser>;
 
 /**
  * Hook for managing PocketBase authentication.
@@ -10,36 +17,36 @@ import { usePocketBase } from './usePocketBase';
  * password reset, email verification, and OTP requests. Automatically syncs with
  * PocketBase authStore and subscribes to real-time user record updates.
  *
- * @template User - The user record type extending AuthRecord
+ * @template TDatabase - The database schema (inferred from PocketBaseProvider)
+ * @template TCollection - The auth collection name (must be a key in TDatabase)
+ * @template TUser - The user record type (used when providing explicit type)
  * @param options - Configuration options
  * @param options.collectionName - The authentication collection name (default: 'users')
+ * @param options.realtime - Enable real-time updates (default: true)
  * @returns Authentication state and methods
  *
- * @example
+ * @example Basic usage with explicit type
  * ```tsx
- * const { user, isAuthenticated, signIn, signOut, signUp } = useAuth<User>();
+ * const { user, signIn, signOut } = useAuth<User>();
+ * ```
  *
- * const handleLogin = async () => {
- *   const user = await signIn.email('user@example.com', 'password');
- *   if (user) console.log('Signed in:', user);
- * };
- *
- * const handleRegister = async () => {
- *   const user = await signUp.email('user@example.com', 'password');
- *   if (user) console.log('Registered:', user);
- * };
+ * @example With typed database schema (auto-inferred from PocketBaseProvider)
+ * ```tsx
+ * // Types are automatically inferred from Database schema
+ * const { user } = useAuth(); // user: UsersResponse | null
+ * const { user } = useAuth({ collectionName: 'admins' }); // user: AdminsResponse | null
  * ```
  */
-export function useAuth<User extends AuthRecord>({ collectionName = 'users', realtime = true }: UseAuthOptions = {}): UseAuthResult<User> {
+export function useAuth<TUser extends AuthRecord>({ collectionName = 'users', realtime = true }: UseAuthOptions = {}): UseAuthResult<TUser> {
   const pb = usePocketBase();
-  const [user, setUser] = useState<User | null>(pb.authStore.record as User);
+  const [user, setUser] = useState<TUser | null>(pb.authStore.record as TUser);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const recordService = useMemo(() => pb.collection(collectionName), [pb, collectionName]);
 
   useEffect(() => {
     return pb.authStore.onChange((_, model) => {
-      setUser(model as User);
+      setUser(model as TUser);
     });
   }, [pb]);
 
@@ -50,7 +57,7 @@ export function useAuth<User extends AuthRecord>({ collectionName = 'users', rea
 
     const unsubscribe = recordService.subscribe(user.id, (e) => {
       if (e.action === 'update') {
-        setUser(e.record as User);
+        setUser(e.record as TUser);
       } else if (e.action === 'delete') {
         setUser(null);
       }
@@ -68,7 +75,7 @@ export function useAuth<User extends AuthRecord>({ collectionName = 'users', rea
           setIsLoading(true);
           setError(null);
           const authData = await recordService.authWithPassword(email, password, options);
-          return authData.record as User;
+          return authData.record as TUser;
         } catch (err) {
           setError(err as Error);
           return null;
@@ -81,7 +88,7 @@ export function useAuth<User extends AuthRecord>({ collectionName = 'users', rea
           setIsLoading(true);
           setError(null);
           const authData = await recordService.authWithOAuth2({ provider, ...options });
-          return authData.record as User;
+          return authData.record as TUser;
         } catch (err) {
           setError(err as Error);
           return null;
@@ -94,7 +101,7 @@ export function useAuth<User extends AuthRecord>({ collectionName = 'users', rea
           setIsLoading(true);
           setError(null);
           const authData = await recordService.authWithOTP(otp, password, options);
-          return authData.record as User;
+          return authData.record as TUser;
         } catch (err) {
           setError(err as Error);
           return null;
@@ -117,7 +124,7 @@ export function useAuth<User extends AuthRecord>({ collectionName = 'users', rea
           setIsLoading(true);
           setError(null);
           const { additionalData, autoLogin = false, ...rest } = options;
-          const record: User = await recordService.create(
+          const record: TUser = await recordService.create(
             {
               email,
               password,
@@ -144,7 +151,7 @@ export function useAuth<User extends AuthRecord>({ collectionName = 'users', rea
   );
 
   const refreshAuth = useCallback(async () => {
-    const authData = await recordService.authRefresh<User>();
+    const authData = await recordService.authRefresh<TUser>();
     setUser(authData.record);
   }, [recordService]);
 

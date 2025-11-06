@@ -1,30 +1,37 @@
 import type { RecordModel, RecordOptions } from 'pocketbase';
 import { useCallback, useMemo, useState } from 'react';
-import type { UseCreateMutationResult } from '../types';
+import type { CollectionRecord, UseCreateMutationResult } from '../types';
 import { usePocketBase } from './usePocketBase';
+
+export function useCreateMutation<TDatabase extends Record<string, RecordModel>, TCollection extends keyof TDatabase & string>(
+  collectionName: TCollection,
+): UseCreateMutationResult<CollectionRecord<TDatabase, TCollection>>;
+
+export function useCreateMutation<TRecord extends RecordModel>(collectionName: string): UseCreateMutationResult<TRecord>;
 
 /**
  * Hook for creating new records in a PocketBase collection.
  *
- * @template Record - The record type extending RecordModel
+ * @template TDatabase - The database schema (inferred from PocketBaseProvider)
+ * @template TCollection - The collection name (must be a key in TDatabase)
+ * @template TRecord - The record type (used when providing explicit type)
  * @param collectionName - The name of the PocketBase collection
  * @returns An object containing the mutate function and mutation state
  *
- * @example
+ * @example Basic usage with explicit type
  * ```tsx
- * const { mutateAsync, isPending, isSuccess, isError, error } = useCreateMutation<Post>('posts');
+ * const { mutateAsync, isPending } = useCreateMutation<Post>('posts');
+ * await mutateAsync({ title: 'Hello', content: 'World' });
+ * ```
  *
- * const handleCreate = async () => {
- *   try {
- *     const newPost = await mutateAsync({ title: 'Hello', content: 'World' });
- *     console.log('Created:', newPost);
- *   } catch (err) {
- *     console.error('Failed to create post:', err);
- *   }
- * };
+ * @example With typed database schema (auto-inferred from PocketBaseProvider)
+ * ```tsx
+ * // Types are automatically inferred from Database schema
+ * const { mutateAsync } = useCreateMutation('posts');
+ * await mutateAsync({ title: 'Hello' }); // Typed as PostsResponse
  * ```
  */
-export function useCreateMutation<Record extends RecordModel>(collectionName: string): UseCreateMutationResult<Record> {
+export function useCreateMutation<TRecord extends RecordModel>(collectionName: string): UseCreateMutationResult<TRecord> {
   const pb = usePocketBase();
   const recordService = useMemo(() => pb.collection(collectionName), [pb, collectionName]);
   const [isPending, setIsPending] = useState(false);

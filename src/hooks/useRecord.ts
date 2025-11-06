@@ -2,9 +2,25 @@ import type { RecordModel } from 'pocketbase';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { applyTransformers } from '../lib/utils';
 import { dateTransformer } from '../transformers';
-import type { UseRecordOptions, UseRecordResult } from '../types';
+import type { CollectionRecord, UseRecordOptions, UseRecordResult } from '../types';
 import { useQueryState } from './internal/useQueryState';
 import { usePocketBase } from './usePocketBase';
+
+export function useRecord<TDatabase extends Record<string, RecordModel>, TCollection extends keyof TDatabase & string>(
+  collectionName: TCollection,
+  recordId: CollectionRecord<TDatabase, TCollection>['id'] | null | undefined,
+  options?: UseRecordOptions<CollectionRecord<TDatabase, TCollection>>,
+): UseRecordResult<CollectionRecord<TDatabase, TCollection>>;
+
+export function useRecord<TDatabase extends Record<string, RecordModel>, TCollection extends keyof TDatabase & string>(
+  collectionName: TCollection,
+  filter: string | null | undefined,
+  options?: UseRecordOptions<CollectionRecord<TDatabase, TCollection>>,
+): UseRecordResult<CollectionRecord<TDatabase, TCollection>>;
+
+export function useRecord<TRecord extends RecordModel>(collectionName: string, recordId: TRecord['id'] | null | undefined, options?: UseRecordOptions<TRecord>): UseRecordResult<TRecord>;
+
+export function useRecord<TRecord extends RecordModel>(collectionName: string, filter: string | null | undefined, options?: UseRecordOptions<TRecord>): UseRecordResult<TRecord>;
 
 /**
  * Hook for fetching and subscribing to a single PocketBase record.
@@ -13,26 +29,26 @@ import { usePocketBase } from './usePocketBase';
  * to real-time updates for that specific record (or matching filter). Supports
  * field selection and relation expansion.
  *
- * @template Record - The record type extending RecordModel
+ * @template TDatabase - The database schema (inferred from PocketBaseProvider)
+ * @template TCollection - The collection name (must be a key in TDatabase)
+ * @template TRecord - The record type (used when providing explicit type)
  * @param collectionName - The name of the PocketBase collection
  * @param recordIdOrFilter - Either a record ID or a PocketBase filter string
  * @param options - Query and subscription options
  * @returns Query result with loading state, data, and error
  *
- * @example
+ * @example Basic usage with explicit type
  * ```tsx
- * // Fetch by ID
- * const { data: post, isLoading } = useRecord<Post>('posts', 'record_id', {
- *   expand: 'author,comments',
- * });
+ * const { data: post } = useRecord<Post>('posts', 'record_id');
+ * ```
  *
- * // Fetch by filter
- * const { data: user } = useRecord<User>('users', 'email = "user@example.com"');
+ * @example With typed database schema (auto-inferred from PocketBaseProvider)
+ * ```tsx
+ * // Types are automatically inferred from Database schema
+ * const { data } = useRecord('posts', postId); // data: PostsResponse | null
  * ```
  */
-export function useRecord<Record extends RecordModel>(collectionName: string, recordId: Record['id'] | null | undefined, options?: UseRecordOptions<Record>): UseRecordResult<Record>;
-export function useRecord<Record extends RecordModel>(collectionName: string, filter: string | null | undefined, options?: UseRecordOptions<Record>): UseRecordResult<Record>;
-export function useRecord<Record extends RecordModel>(collectionName: string, recordIdOrFilter: Record['id'] | string | null | undefined, options: UseRecordOptions<Record> = {}): UseRecordResult<Record> {
+export function useRecord<TRecord extends RecordModel>(collectionName: string, recordIdOrFilter: TRecord['id'] | string | null | undefined, options: UseRecordOptions<TRecord> = {}): UseRecordResult<TRecord> {
   const { expand, fields, defaultValue, realtime = true, requestKey } = options;
   const pb = usePocketBase();
   const recordService = useMemo(() => pb.collection(collectionName), [pb, collectionName]);

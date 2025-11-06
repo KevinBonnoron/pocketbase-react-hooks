@@ -2,9 +2,16 @@ import type { RecordModel } from 'pocketbase';
 import { useEffect, useMemo, useRef } from 'react';
 import { applyTransformers, sortRecords } from '../lib/utils';
 import { dateTransformer } from '../transformers';
-import type { UseCollectionOptions, UseCollectionResult } from '../types';
+import type { CollectionRecord, DefaultDatabase, UseCollectionOptions, UseCollectionResult } from '../types';
 import { useQueryState } from './internal/useQueryState';
 import { usePocketBase } from './usePocketBase';
+
+export function useCollection<TDatabase extends Record<string, RecordModel>, TCollection extends keyof TDatabase & string>(
+  collectionName: TCollection,
+  options?: UseCollectionOptions<CollectionRecord<TDatabase, TCollection>>,
+): UseCollectionResult<CollectionRecord<TDatabase, TCollection>>;
+
+export function useCollection<TRecord extends RecordModel>(collectionName: string, options?: UseCollectionOptions<TRecord>): UseCollectionResult<TRecord>;
 
 /**
  * Hook for fetching and subscribing to a PocketBase collection.
@@ -13,25 +20,28 @@ import { usePocketBase } from './usePocketBase';
  * and field selection. Automatically subscribes to real-time updates (create, update, delete)
  * and maintains local state accordingly.
  *
- * @template Record - The record type extending RecordModel
+ * @template TDatabase - The database schema (inferred from PocketBaseProvider)
+ * @template TCollection - The collection name (must be a key in TDatabase)
+ * @template TRecord - The record type (used when providing explicit type)
  * @param collectionName - The name of the PocketBase collection
  * @param options - Query and subscription options
  * @returns Query result with loading state, data, and error
  *
- * @example
+ * @example Basic usage with explicit type
  * ```tsx
- * const { data, isLoading, isError, error } = useCollection<Post>('posts', {
+ * const { data, isLoading } = useCollection<Post>('posts', {
  *   filter: 'published = true',
  *   sort: '-created',
- *   expand: 'author',
  * });
+ * ```
  *
- * if (isLoading) return <div>Loading...</div>;
- * if (isError) return <div>Error: {error}</div>;
- * return <div>{data.map(post => <Post key={post.id} {...post} />)}</div>;
+ * @example With typed database schema (auto-inferred from PocketBaseProvider)
+ * ```tsx
+ * // Types are automatically inferred from Database schema
+ * const { data } = useCollection('posts'); // data: PostsResponse[]
  * ```
  */
-export function useCollection<Record extends RecordModel>(collectionName: string, options: UseCollectionOptions<Record> = {}): UseCollectionResult<Record> {
+export function useCollection<TRecord extends RecordModel>(collectionName: string, options: UseCollectionOptions<TRecord> = {}): UseCollectionResult<TRecord> {
   const { enabled = true, page, perPage, filter, sort, expand, fields, defaultValue, fetchAll = true, realtime = true, requestKey } = options;
 
   const pb = usePocketBase();
