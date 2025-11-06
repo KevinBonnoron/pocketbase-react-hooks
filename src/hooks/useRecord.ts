@@ -55,34 +55,33 @@ export function useRecord<TRecord extends RecordModel>(collectionName: string, r
 
   const isId = recordIdOrFilter ? !/[=<>~]/.test(recordIdOrFilter) : false;
 
-  const queryState = useQueryState<Record | null>({
+  const queryState = useQueryState<TRecord | null>({
     defaultValue: defaultValue ?? null,
     initialLoading: !!recordIdOrFilter,
   });
 
-  const transformers = useRef(options.transformers ?? [dateTransformer<Record>()]);
+  const transformers = useRef(options.transformers ?? [dateTransformer<TRecord>()]);
   useEffect(() => {
-    transformers.current = options.transformers ?? [dateTransformer<Record>()];
+    transformers.current = options.transformers ?? [dateTransformer<TRecord>()];
   }, [options.transformers]);
 
-  const fetcher = useCallback(async (): Promise<Record> => {
+  const fetcher = useCallback(async (): Promise<TRecord> => {
     if (!recordIdOrFilter) {
       throw new Error('Record ID or filter is required');
     }
 
     if (isId) {
-      return await recordService.getOne<Record>(recordIdOrFilter, {
-        ...(expand && { expand }),
-        ...(fields && { fields }),
-        ...(requestKey && { requestKey }),
-      });
-    } else {
-      return await recordService.getFirstListItem<Record>(recordIdOrFilter, {
+      return await recordService.getOne<TRecord>(recordIdOrFilter, {
         ...(expand && { expand }),
         ...(fields && { fields }),
         ...(requestKey && { requestKey }),
       });
     }
+    return await recordService.getFirstListItem<TRecord>(recordIdOrFilter, {
+      ...(expand && { expand }),
+      ...(fields && { fields }),
+      ...(requestKey && { requestKey }),
+    });
   }, [recordService, recordIdOrFilter, expand, fields, isId, requestKey]);
 
   useEffect(() => {
@@ -101,7 +100,7 @@ export function useRecord<TRecord extends RecordModel>(collectionName: string, r
     if (!recordIdOrFilter || !realtime) return;
 
     if (isId) {
-      const unsubscribe = recordService.subscribe<Record>(
+      const unsubscribe = recordService.subscribe<TRecord>(
         recordIdOrFilter,
         (e) => {
           switch (e.action) {
@@ -122,31 +121,30 @@ export function useRecord<TRecord extends RecordModel>(collectionName: string, r
       return () => {
         unsubscribe.then((unsub) => unsub());
       };
-    } else {
-      const unsubscribe = recordService.subscribe<Record>(
-        '*',
-        (e) => {
-          switch (e.action) {
-            case 'create':
-            case 'update':
-              queryState.setData(() => applyTransformers(e.record, transformers.current));
-              break;
-            case 'delete':
-              queryState.setData((current) => (current && current.id === e.record.id ? null : current));
-              break;
-          }
-        },
-        {
-          filter: recordIdOrFilter,
-          ...(expand && { expand }),
-          ...(requestKey && { requestKey }),
-        },
-      );
-
-      return () => {
-        unsubscribe.then((unsub) => unsub());
-      };
     }
+    const unsubscribe = recordService.subscribe<TRecord>(
+      '*',
+      (e) => {
+        switch (e.action) {
+          case 'create':
+          case 'update':
+            queryState.setData(() => applyTransformers(e.record, transformers.current));
+            break;
+          case 'delete':
+            queryState.setData((current) => (current && current.id === e.record.id ? null : current));
+            break;
+        }
+      },
+      {
+        filter: recordIdOrFilter,
+        ...(expand && { expand }),
+        ...(requestKey && { requestKey }),
+      },
+    );
+
+    return () => {
+      unsubscribe.then((unsub) => unsub());
+    };
   }, [recordService, recordIdOrFilter, expand, isId, realtime, queryState.setData, requestKey]);
 
   return queryState.result;

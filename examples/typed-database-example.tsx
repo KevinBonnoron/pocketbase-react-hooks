@@ -16,7 +16,7 @@ interface UsersResponse extends AuthRecord {
   name: string;
 }
 
-interface Database {
+interface Database extends Record<string, RecordModel> {
   posts: PostsResponse;
   users: UsersResponse;
 }
@@ -36,6 +36,7 @@ function Posts() {
   const { data: posts, isLoading } = useCollection('posts');
 
   if (isLoading) return <div>Loading...</div>;
+  if (!posts) return null;
 
   return (
     <div>

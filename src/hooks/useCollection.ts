@@ -47,13 +47,13 @@ export function useCollection<TRecord extends RecordModel>(collectionName: strin
   const pb = usePocketBase();
   const recordService = useMemo(() => pb.collection(collectionName), [pb, collectionName]);
 
-  const queryState = useQueryState<Record[]>({
+  const queryState = useQueryState<TRecord[]>({
     defaultValue: defaultValue ?? [],
     initialLoading: enabled,
   });
 
-  const transformers = useRef(options.transformers ?? [dateTransformer<Record>()]);
-  transformers.current = options.transformers ?? [dateTransformer<Record>()];
+  const transformers = useRef(options.transformers ?? [dateTransformer<TRecord>()]);
+  transformers.current = options.transformers ?? [dateTransformer<TRecord>()];
 
   useEffect(() => {
     if (!enabled) {
@@ -62,9 +62,9 @@ export function useCollection<TRecord extends RecordModel>(collectionName: strin
     }
 
     return queryState.executeFetch(async () => {
-      let result: Record[] | null;
+      let result: TRecord[] | null;
       if (fetchAll) {
-        result = await recordService.getFullList<Record>({
+        result = await recordService.getFullList<TRecord>({
           ...(page && { page }),
           ...(perPage && { perPage }),
           ...(filter && { filter }),
@@ -74,7 +74,7 @@ export function useCollection<TRecord extends RecordModel>(collectionName: strin
           ...(requestKey && { requestKey }),
         });
       } else {
-        const { items } = await recordService.getList<Record>(page ?? 1, perPage ?? 20, {
+        const { items } = await recordService.getList<TRecord>(page ?? 1, perPage ?? 20, {
           ...(filter && { filter }),
           ...(sort && { sort }),
           ...(expand && { expand }),
@@ -91,7 +91,7 @@ export function useCollection<TRecord extends RecordModel>(collectionName: strin
   useEffect(() => {
     if (!enabled || !realtime) return;
 
-    const unsubscribe = recordService.subscribe<Record>(
+    const unsubscribe = recordService.subscribe<TRecord>(
       '*',
       (e) => {
         queryState.setData((currentData) => {

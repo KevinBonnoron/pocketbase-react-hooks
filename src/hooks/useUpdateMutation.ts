@@ -40,7 +40,7 @@ export function useUpdateMutation<TRecord extends RecordModel>(collectionName: s
   const [error, setError] = useState<string | null>(null);
 
   const mutateAsync = useCallback(
-    async (bodyParams: Partial<Record>, options?: RecordOptions): Promise<Record> => {
+    async (bodyParams: Partial<TRecord>, options?: RecordOptions): Promise<TRecord> => {
       if (!id) {
         throw new Error('ID is required');
       }
@@ -49,7 +49,7 @@ export function useUpdateMutation<TRecord extends RecordModel>(collectionName: s
         setIsPending(true);
         setError(null);
         const record = options ? await recordService.update(id, bodyParams, options) : await recordService.update(id, bodyParams);
-        return record as Record;
+        return record as TRecord;
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Error updating record';
         setError(errorMessage);
@@ -62,7 +62,7 @@ export function useUpdateMutation<TRecord extends RecordModel>(collectionName: s
   );
 
   const mutate = useCallback(
-    (bodyParams: Partial<Record>, options?: RecordOptions): void => {
+    (bodyParams: Partial<TRecord>, options?: RecordOptions): void => {
       mutateAsync(bodyParams, options).catch(() => {
         // Error is already handled in mutateAsync
       });
@@ -71,7 +71,7 @@ export function useUpdateMutation<TRecord extends RecordModel>(collectionName: s
   );
 
   return useMemo(
-    (): UseUpdateMutationResult<Record> => ({
+    (): UseUpdateMutationResult<TRecord> => ({
       mutate,
       mutateAsync,
       isPending,
