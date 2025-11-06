@@ -7,7 +7,7 @@ import type { DefaultDatabase, TypedPocketBase } from '../types';
 /**
  * Props for the PocketBaseProvider component.
  */
-interface PocketBaseProviderProps<TDatabase extends Record<string, RecordModel> = DefaultDatabase> {
+interface PocketBaseProviderProps<TDatabase = DefaultDatabase> {
   /**
    * React children to render
    */
@@ -58,6 +58,6 @@ interface PocketBaseProviderProps<TDatabase extends Record<string, RecordModel> 
  * }
  * ```
  */
-export function PocketBaseProvider<TDatabase extends Record<string, RecordModel> = DefaultDatabase>({ children, pocketBase }: PocketBaseProviderProps<TDatabase>): ReactElement {
+export function PocketBaseProvider<TDatabase = DefaultDatabase>({ children, pocketBase }: PocketBaseProviderProps<TDatabase>): ReactElement {
   return <PocketBaseContext.Provider value={pocketBase as TypedPocketBase<TDatabase>}>{children}</PocketBaseContext.Provider>;
 }

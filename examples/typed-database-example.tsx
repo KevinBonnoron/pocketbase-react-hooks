@@ -1,5 +1,6 @@
 import PocketBase from 'pocketbase';
-import { PocketBaseProvider, TypedPocketBase, useCollection, useRecord, useAuth } from '../src';
+import { PocketBaseProvider, useCollection, useRecord, useAuth } from '../src';
+import type { TypedPocketBase } from '../src';
 import type { AuthRecord, RecordModel } from 'pocketbase';
 
 interface PostsResponse extends RecordModel {
@@ -16,7 +17,7 @@ interface UsersResponse extends AuthRecord {
   name: string;
 }
 
-interface Database extends Record<string, RecordModel> {
+interface Database {
   posts: PostsResponse;
   users: UsersResponse;
 }

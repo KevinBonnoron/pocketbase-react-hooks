@@ -3,7 +3,7 @@ import { useCallback, useMemo, useState } from 'react';
 import type { CollectionRecord, UseCreateMutationResult } from '../types';
 import { usePocketBase } from './usePocketBase';
 
-export function useCreateMutation<TDatabase extends Record<string, RecordModel>, TCollection extends keyof TDatabase & string>(
+export function useCreateMutation<TDatabase, TCollection extends keyof TDatabase & string>(
   collectionName: TCollection,
 ): UseCreateMutationResult<CollectionRecord<TDatabase, TCollection>>;
 
@@ -38,12 +38,12 @@ export function useCreateMutation<TRecord extends RecordModel>(collectionName: s
   const [error, setError] = useState<string | null>(null);
 
   const mutateAsync = useCallback(
-    async (bodyParams: Partial<Record>, options?: RecordOptions): Promise<Record> => {
+    async (bodyParams: Partial<TRecord>, options?: RecordOptions): Promise<TRecord> => {
       try {
         setIsPending(true);
         setError(null);
         const record = options ? await recordService.create(bodyParams, options) : await recordService.create(bodyParams);
-        return record as Record;
+        return record as TRecord;
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Error creating record';
         setError(errorMessage);
@@ -56,7 +56,7 @@ export function useCreateMutation<TRecord extends RecordModel>(collectionName: s
   );
 
   const mutate = useCallback(
-    (bodyParams: Partial<Record>, options?: RecordOptions): void => {
+    (bodyParams: Partial<TRecord>, options?: RecordOptions): void => {
       mutateAsync(bodyParams, options).catch(() => {
         // Error is already handled in mutateAsync
       });
@@ -65,7 +65,7 @@ export function useCreateMutation<TRecord extends RecordModel>(collectionName: s
   );
 
   return useMemo(
-    (): UseCreateMutationResult<Record> => ({
+    (): UseCreateMutationResult<TRecord> => ({
       mutate,
       mutateAsync,
       isPending,

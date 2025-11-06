@@ -23,7 +23,7 @@ import type { DefaultDatabase, TypedPocketBase } from '../types';
  * };
  * ```
  */
-export function usePocketBase<TDatabase extends Record<string, RecordModel> = DefaultDatabase>(): TypedPocketBase<TDatabase> {
+export function usePocketBase<TDatabase = DefaultDatabase>(): TypedPocketBase<TDatabase> {
   const pb = useContext(PocketBaseContext);
   if (!pb) {
     throw new Error('usePocketBase must be used within a PocketBaseProvider');
