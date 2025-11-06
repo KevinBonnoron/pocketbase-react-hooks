@@ -1,4 +1,5 @@
 export * from './auth-provider.type';
+export * from './database.type';
 export * from './query-result.type';
 export * from './record-transformer.type';
 export * from './useAuth.type';

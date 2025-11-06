@@ -1,5 +1,7 @@
+import type { RecordModel } from 'pocketbase';
 import type PocketBase from 'pocketbase';
 import { type Context, createContext, useContext } from 'react';
+import type { DefaultDatabase, TypedPocketBase } from '../types';
 
 /**
  * React Context for providing PocketBase client instance.
@@ -7,7 +9,7 @@ import { type Context, createContext, useContext } from 'react';
  *
  * @internal
  */
-export const PocketBaseContext: Context<PocketBase | null> = createContext<PocketBase | null>(null);
+export const PocketBaseContext: Context<TypedPocketBase<any> | null> = createContext<TypedPocketBase<any> | null>(null);
 
 /**
  * Hook for accessing the PocketBase client instance from context.
@@ -23,10 +25,10 @@ export const PocketBaseContext: Context<PocketBase | null> = createContext<Pocke
  *
  * @deprecated Use `usePocketBase()` instead. This export is kept for backward compatibility.
  */
-export const usePocketBaseContext = (): PocketBase => {
+export const usePocketBaseContext = <TDatabase extends Record<string, RecordModel> = DefaultDatabase>(): TypedPocketBase<TDatabase> => {
   const context = useContext(PocketBaseContext);
   if (!context) {
     throw new Error('usePocketBaseContext must be used within a PocketBaseProvider');
   }
-  return context;
+  return context as TypedPocketBase<TDatabase>;
 };

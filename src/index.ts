@@ -6,8 +6,12 @@ export { useAuth, useCollection, useCreateMutation, useDeleteMutation, usePocket
 export { PocketBaseProvider } from './providers/PocketBaseProvider';
 export { dateTransformer } from './transformers';
 export type {
+  AuthCollectionRecord,
   AuthProvider,
+  CollectionRecord,
+  DefaultDatabase,
   QueryResult,
+  TypedPocketBase,
   UseAuthResult,
   UseCollectionOptions,
   UseCollectionResult,
