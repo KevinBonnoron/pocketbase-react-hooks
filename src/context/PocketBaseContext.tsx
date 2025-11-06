@@ -25,7 +25,7 @@ export const PocketBaseContext: Context<TypedPocketBase<any> | null> = createCon
  *
  * @deprecated Use `usePocketBase()` instead. This export is kept for backward compatibility.
  */
-export const usePocketBaseContext = <TDatabase = DefaultDatabase>(): TypedPocketBase<TDatabase> => {
+export const usePocketBaseContext = <TDatabase extends Record<string, RecordModel> = DefaultDatabase>(): TypedPocketBase<TDatabase> => {
   const context = useContext(PocketBaseContext);
   if (!context) {
     throw new Error('usePocketBaseContext must be used within a PocketBaseProvider');

@@ -3,7 +3,7 @@ import { useCallback, useMemo, useState } from 'react';
 import type { CollectionRecord, UseCreateMutationResult } from '../types';
 import { usePocketBase } from './usePocketBase';
 
-export function useCreateMutation<TDatabase, TCollection extends keyof TDatabase & string>(
+export function useCreateMutation<TDatabase extends Record<string, RecordModel>, TCollection extends keyof TDatabase & string>(
   collectionName: TCollection,
 ): UseCreateMutationResult<CollectionRecord<TDatabase, TCollection>>;
 

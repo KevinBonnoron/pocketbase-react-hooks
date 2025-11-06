@@ -6,13 +6,13 @@ import type { CollectionRecord, UseRecordOptions, UseRecordResult } from '../typ
 import { useQueryState } from './internal/useQueryState';
 import { usePocketBase } from './usePocketBase';
 
-export function useRecord<TDatabase, TCollection extends keyof TDatabase & string>(
+export function useRecord<TDatabase extends Record<string, RecordModel>, TCollection extends keyof TDatabase & string>(
   collectionName: TCollection,
   recordId: CollectionRecord<TDatabase, TCollection>['id'] | null | undefined,
   options?: UseRecordOptions<CollectionRecord<TDatabase, TCollection>>,
 ): UseRecordResult<CollectionRecord<TDatabase, TCollection>>;
 
-export function useRecord<TDatabase, TCollection extends keyof TDatabase & string>(
+export function useRecord<TDatabase extends Record<string, RecordModel>, TCollection extends keyof TDatabase & string>(
   collectionName: TCollection,
   filter: string | null | undefined,
   options?: UseRecordOptions<CollectionRecord<TDatabase, TCollection>>,
