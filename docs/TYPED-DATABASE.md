@@ -41,19 +41,21 @@ export interface UsersResponse extends AuthRecord {
 // ... other collections
 ```
 
-### 2. Create a Database interface
+### 2. Create a Database type
 
-Create an interface that maps collection names to their response types:
+Create a type (not interface) that maps collection names to their response types:
 
 ```typescript
 // src/database.ts
 import type { PostsResponse, UsersResponse } from './pocketbase-types';
 
-export interface Database {
+export type Database = {
   posts: PostsResponse;
   users: UsersResponse;
-}
+};
 ```
+
+**Important:** Use `type` instead of `interface` for the Database definition. TypeScript requires types that satisfy `Record<string, RecordModel>` to have an index signature, which is easier to achieve with type aliases.
 
 ### 3. Type your PocketBase instance and Provider
 
@@ -244,9 +246,10 @@ const { data } = useCollection('collection');
 ## Best Practices
 
 1. **Keep types in sync**: Regenerate types whenever your PocketBase schema changes
-2. **Use a single Database interface**: Define one central Database interface for your entire app
-3. **Leverage type inference**: Let TypeScript infer types from collection names instead of manually specifying generics
-4. **Type your PocketBase instance**: Always cast your PocketBase instance as `TypedPocketBase<Database>`
+2. **Use a single Database type**: Define one central Database type for your entire app
+3. **Use `type` not `interface`**: Always use `type` for your Database definition to satisfy TypeScript's `Record<string, RecordModel>` constraint
+4. **Leverage type inference**: Let TypeScript infer types from collection names instead of manually specifying generics
+5. **Type your PocketBase instance**: Always cast your PocketBase instance as `TypedPocketBase<Database>`
 
 ## Troubleshooting
 
@@ -259,19 +262,35 @@ Make sure you:
 
 ### Collection name not autocompleting
 
-Ensure your Database interface includes all collections:
+Ensure your Database type includes all collections:
 
 ```typescript
-interface Database {
+type Database = {
   posts: PostsResponse;
   users: UsersResponse;
   comments: CommentsResponse; // Don't forget any collections!
+};
+```
+
+### Error: "Index signature for type 'string' is missing"
+
+This error occurs when using `interface` instead of `type` for your Database definition. Use `type` instead:
+
+```typescript
+// ❌ Wrong - causes error
+interface Database {
+  posts: PostsResponse;
 }
+
+// ✅ Correct
+type Database = {
+  posts: PostsResponse;
+};
 ```
 
 ### Getting RecordModel instead of specific type
 
 Check that:
-1. The collection name matches a key in your Database interface (case-sensitive)
+1. The collection name matches a key in your Database type (case-sensitive)
 2. You're not explicitly passing a generic that overrides inference
 3. Your Provider is typed: `<PocketBaseProvider<Database> pocketBase={pb}>`

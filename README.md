@@ -79,7 +79,8 @@ This library supports automatic type inference when used with [pocketbase-typege
 
 ```typescript
 import PocketBase from 'pocketbase';
-import { PocketBaseProvider, TypedPocketBase, useCollection } from 'pocketbase-react-hooks';
+import { PocketBaseProvider, useCollection } from 'pocketbase-react-hooks';
+import type { TypedPocketBase } from 'pocketbase-react-hooks';
 import type { Database } from './pocketbase-types';
 
 const pb = new PocketBase('http://127.0.0.1:8090') as TypedPocketBase<Database>;
@@ -93,6 +94,7 @@ function App() {
 }
 
 function Posts() {
+  // Types are automatically inferred!
   const { data: posts } = useCollection('posts');
 
   return posts.map(post => (

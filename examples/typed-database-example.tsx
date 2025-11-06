@@ -3,24 +3,21 @@ import { PocketBaseProvider, useCollection, useRecord, useAuth } from '../src';
 import type { TypedPocketBase } from '../src';
 import type { AuthRecord, RecordModel } from 'pocketbase';
 
-interface PostsResponse extends RecordModel {
-  id: string;
+type PostsResponse = RecordModel & {
   title: string;
   content: string;
   author: string;
-}
+};
 
-interface UsersResponse extends AuthRecord {
-  id: string;
+type UsersResponse = AuthRecord & {
   username: string;
-  email: string;
   name: string;
-}
+};
 
-interface Database {
+type Database = {
   posts: PostsResponse;
   users: UsersResponse;
-}
+};
 
 const pb = new PocketBase('http://127.0.0.1:8090') as TypedPocketBase<Database>;
 
