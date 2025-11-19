@@ -90,7 +90,8 @@ export function useRecord<Record extends RecordModel>(collectionName: string, re
         (e) => {
           switch (e.action) {
             case 'update':
-              queryState.setData(() => applyTransformers(e.record, transformers.current));
+              queryState.setError(null);
+              queryState.setData(applyTransformers(e.record, transformers.current));
               break;
             case 'delete':
               queryState.setData(() => null);
@@ -113,7 +114,8 @@ export function useRecord<Record extends RecordModel>(collectionName: string, re
           switch (e.action) {
             case 'create':
             case 'update':
-              queryState.setData(() => applyTransformers(e.record, transformers.current));
+              queryState.setError(null);
+              queryState.setData(applyTransformers(e.record, transformers.current));
               break;
             case 'delete':
               queryState.setData((current) => (current && current.id === e.record.id ? null : current));
@@ -131,7 +133,7 @@ export function useRecord<Record extends RecordModel>(collectionName: string, re
         unsubscribe.then((unsub) => unsub());
       };
     }
-  }, [recordService, recordIdOrFilter, expand, isId, realtime, queryState.setData, requestKey]);
+  }, [recordService, recordIdOrFilter, expand, isId, realtime, queryState.setData, queryState.setError, requestKey]);
 
   return queryState.result;
 }
