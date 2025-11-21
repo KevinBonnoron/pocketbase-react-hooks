@@ -28,7 +28,7 @@ describe('useRecord', () => {
     expect(result.current.isSuccess).toBe(true);
     expect(result.current.isError).toBe(false);
     expect(result.current.error).toBe(null);
-    expect(result.current.data).toBe(null);
+    expect(result.current.data).toBe(undefined);
   });
 
   it('should fetch record by ID', async () => {
@@ -77,7 +77,7 @@ describe('useRecord', () => {
       expect(result.current.error).toBe('Record not found');
       expect(result.current.isLoading).toBe(false);
       expect(result.current.isError).toBe(true);
-      expect(result.current.data).toBe(null);
+      expect(result.current.data).toBe(undefined);
     });
   });
 
@@ -186,7 +186,7 @@ describe('useRecord', () => {
     });
 
     return waitFor(() => {
-      expect(result.current.data).toBe(null);
+      expect(result.current.data).toBe(undefined);
     });
   });
 
@@ -238,7 +238,7 @@ describe('useRecord', () => {
     await waitFor(() => {
       expect(result.current.isError).toBe(true);
       expect(result.current.error).toBe('Record not found');
-      expect(result.current.data).toBe(null);
+      expect(result.current.data).toBe(undefined);
 
       subscriptionCallback({
         action: 'create',

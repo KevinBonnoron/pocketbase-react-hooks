@@ -1,14 +1,14 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { QueryResult } from '../../types/query-result.type';
 
-function createQueryResult<T>(isLoading: boolean, error: string | null, data: T | null): QueryResult<T> {
+function createQueryResult<T>(isLoading: boolean, error: string | null, data: T | undefined): QueryResult<T> {
   if (isLoading) {
     return {
       isLoading: true,
       isSuccess: false,
       isError: false,
       error: null,
-      data: null,
+      data: undefined,
     } as const;
   }
 
@@ -18,7 +18,7 @@ function createQueryResult<T>(isLoading: boolean, error: string | null, data: T 
       isSuccess: false,
       isError: true,
       error,
-      data: null,
+      data: undefined,
     } as const;
   }
 
@@ -37,8 +37,8 @@ interface UseQueryStateOptions<T> {
 }
 
 interface UseQueryStateReturn<T> {
-  data: T;
-  setData: React.Dispatch<React.SetStateAction<T>>;
+  data: T | undefined;
+  setData: React.Dispatch<React.SetStateAction<T | undefined>>;
   isLoading: boolean;
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
   error: string | null;
@@ -52,7 +52,7 @@ export function useQueryState<T>(options: UseQueryStateOptions<T>): UseQueryStat
   const { defaultValue, initialLoading = false } = options;
   const defaultValueRef = useRef(defaultValue);
 
-  const [data, setData] = useState<T>(defaultValue as T);
+  const [data, setData] = useState<T | undefined>(defaultValue !== undefined ? (defaultValue as T) : undefined);
   const [isLoading, setIsLoading] = useState(initialLoading);
   const [error, setError] = useState<string | null>(null);
 
@@ -87,7 +87,7 @@ export function useQueryState<T>(options: UseQueryStateOptions<T>): UseQueryStat
   }, []);
 
   const reset = useCallback(() => {
-    setData(defaultValueRef.current as T);
+    setData(defaultValueRef.current ?? defaultValueRef.current);
     setIsLoading(false);
     setError(null);
   }, []);

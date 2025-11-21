@@ -11,7 +11,7 @@ export interface UseRecordOptions<T extends RecordModel> extends UseQueryCommonO
   /**
    * Default value to use before data is loaded
    */
-  defaultValue?: T | null;
+  defaultValue?: T | undefined;
 
   /**
    * Enable real-time subscription to record changes (default: true)
@@ -29,4 +29,4 @@ export interface UseRecordOptions<T extends RecordModel> extends UseQueryCommonO
  *
  * @template T - The record type extending RecordModel
  */
-export type UseRecordResult<T extends RecordModel = RecordModel> = QueryResult<T | null>;
+export type UseRecordResult<T extends RecordModel = RecordModel> = QueryResult<T | undefined>;

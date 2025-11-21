@@ -39,8 +39,8 @@ export function useRecord<Record extends RecordModel>(collectionName: string, re
 
   const isId = recordIdOrFilter ? !/[=<>~]/.test(recordIdOrFilter) : false;
 
-  const queryState = useQueryState<Record | null>({
-    defaultValue: defaultValue ?? null,
+  const queryState = useQueryState<Record | undefined>({
+    defaultValue: defaultValue ?? undefined,
     initialLoading: !!recordIdOrFilter,
   });
 
@@ -94,7 +94,7 @@ export function useRecord<Record extends RecordModel>(collectionName: string, re
               queryState.setData(applyTransformers(e.record, transformers.current));
               break;
             case 'delete':
-              queryState.setData(() => null);
+              queryState.setData(undefined);
               break;
           }
         },
@@ -118,7 +118,7 @@ export function useRecord<Record extends RecordModel>(collectionName: string, re
               queryState.setData(applyTransformers(e.record, transformers.current));
               break;
             case 'delete':
-              queryState.setData((current) => (current && current.id === e.record.id ? null : current));
+              queryState.setData((current) => (current && current.id === e.record.id ? undefined : current));
               break;
           }
         },
