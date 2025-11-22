@@ -1,7 +1,7 @@
 /**
  * Represents a query in loading state.
  */
-type LoadingQueryResult = { isLoading: true; isSuccess: false; isError: false; error: null; data: null };
+type LoadingQueryResult = { isLoading: true; isSuccess: false; isError: false; error: null; data: undefined };
 
 /**
  * Represents a successful query result.
@@ -13,7 +13,7 @@ type SuccessQueryResult<T> = { isLoading: false; isSuccess: true; isError: false
 /**
  * Represents a failed query result.
  */
-type ErrorQueryResult = { isLoading: false; isSuccess: false; isError: true; error: string; data: null };
+type ErrorQueryResult = { isLoading: false; isSuccess: false; isError: true; error: string; data: undefined };
 
 /**
  * Discriminated union type for query results.

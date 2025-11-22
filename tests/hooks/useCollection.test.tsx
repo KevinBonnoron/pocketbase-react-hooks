@@ -29,7 +29,7 @@ describe('useCollection', () => {
     expect(result.current.isSuccess).toBe(false);
     expect(result.current.isError).toBe(false);
     expect(result.current.error).toBe(null);
-    expect(result.current.data).toBe(null);
+    expect(result.current.data).toBe(undefined);
   });
 
   it('should fetch collection data', async () => {
@@ -66,7 +66,7 @@ describe('useCollection', () => {
       expect(result.current.error).toEqual('Fetch failed');
       expect(result.current.isLoading).toBe(false);
       expect(result.current.isError).toBe(true);
-      expect(result.current.data).toBe(null);
+      expect(result.current.data).toBe(undefined);
     });
   });
 

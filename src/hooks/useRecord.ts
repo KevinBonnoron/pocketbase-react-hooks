@@ -51,8 +51,8 @@ export function useRecord<TRecord extends RecordModel>(collectionName: string, r
 
   const isId = recordIdOrFilter ? !/[=<>~]/.test(recordIdOrFilter) : false;
 
-  const queryState = useQueryState<TRecord | null>({
-    defaultValue: defaultValue ?? null,
+  const queryState = useQueryState<TRecord | undefined>({
+    defaultValue: defaultValue ?? undefined,
     initialLoading: !!recordIdOrFilter,
   });
 
@@ -101,10 +101,11 @@ export function useRecord<TRecord extends RecordModel>(collectionName: string, r
         (e) => {
           switch (e.action) {
             case 'update':
-              queryState.setData(() => applyTransformers(e.record, transformers.current));
+              queryState.setError(null);
+              queryState.setData(applyTransformers(e.record, transformers.current));
               break;
             case 'delete':
-              queryState.setData(() => null);
+              queryState.setData(undefined);
               break;
           }
         },
@@ -117,31 +118,33 @@ export function useRecord<TRecord extends RecordModel>(collectionName: string, r
       return () => {
         unsubscribe.then((unsub) => unsub());
       };
-    }
-    const unsubscribe = recordService.subscribe<TRecord>(
-      '*',
-      (e) => {
-        switch (e.action) {
-          case 'create':
-          case 'update':
-            queryState.setData(() => applyTransformers(e.record, transformers.current));
-            break;
-          case 'delete':
-            queryState.setData((current) => (current && current.id === e.record.id ? null : current));
-            break;
-        }
-      },
-      {
-        filter: recordIdOrFilter,
-        ...(expand && { expand }),
-        ...(requestKey && { requestKey }),
-      },
-    );
+    } else {
+      const unsubscribe = recordService.subscribe<TRecord>(
+        '*',
+        (e) => {
+          switch (e.action) {
+            case 'create':
+            case 'update':
+              queryState.setError(null);
+              queryState.setData(applyTransformers(e.record, transformers.current));
+              break;
+            case 'delete':
+              queryState.setData((current) => (current && current.id === e.record.id ? undefined : current));
+              break;
+          }
+        },
+        {
+          filter: recordIdOrFilter,
+          ...(expand && { expand }),
+          ...(requestKey && { requestKey }),
+        },
+      );
 
-    return () => {
-      unsubscribe.then((unsub) => unsub());
-    };
-  }, [recordService, recordIdOrFilter, expand, isId, realtime, queryState.setData, requestKey]);
+      return () => {
+        unsubscribe.then((unsub) => unsub());
+      };
+    }
+  }, [recordService, recordIdOrFilter, expand, isId, realtime, queryState.setData, queryState.setError, requestKey]);
 
   return queryState.result;
 }

@@ -28,7 +28,7 @@ describe('useRecord', () => {
     expect(result.current.isSuccess).toBe(true);
     expect(result.current.isError).toBe(false);
     expect(result.current.error).toBe(null);
-    expect(result.current.data).toBe(null);
+    expect(result.current.data).toBe(undefined);
   });
 
   it('should fetch record by ID', async () => {
@@ -77,7 +77,7 @@ describe('useRecord', () => {
       expect(result.current.error).toBe('Record not found');
       expect(result.current.isLoading).toBe(false);
       expect(result.current.isError).toBe(true);
-      expect(result.current.data).toBe(null);
+      expect(result.current.data).toBe(undefined);
     });
   });
 
@@ -186,7 +186,7 @@ describe('useRecord', () => {
     });
 
     return waitFor(() => {
-      expect(result.current.data).toBe(null);
+      expect(result.current.data).toBe(undefined);
     });
   });
 
@@ -215,6 +215,41 @@ describe('useRecord', () => {
     });
 
     return waitFor(() => {
+      expect(result.current.data).toEqual(newRecord);
+    });
+  });
+
+  it('should clear error and set data when create event arrives after initial fetch error in filter mode', async () => {
+    const mockError = new Error('Record not found');
+    const newRecord = { id: '1', title: 'New Record', collectionId: 'test', collectionName: 'test' };
+
+    mockGetFirstListItem.mockRejectedValue(mockError);
+
+    let subscriptionCallback: (event: { action: string; record: RecordModel }) => void;
+    mockSubscribe.mockImplementation((_pattern: string, callback: (event: { action: string; record: RecordModel }) => void) => {
+      subscriptionCallback = callback;
+      return Promise.resolve(() => {});
+    });
+
+    const wrapper = createWrapper(mockPocketBase);
+
+    const { result } = renderHook(() => useRecord('test', 'slug="test-record"'), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.isError).toBe(true);
+      expect(result.current.error).toBe('Record not found');
+      expect(result.current.data).toBe(undefined);
+
+      subscriptionCallback({
+        action: 'create',
+        record: newRecord,
+      });
+    });
+
+    return waitFor(() => {
+      expect(result.current.isError).toBe(false);
+      expect(result.current.error).toBe(null);
+      expect(result.current.isSuccess).toBe(true);
       expect(result.current.data).toEqual(newRecord);
     });
   });
