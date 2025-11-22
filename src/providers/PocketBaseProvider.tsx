@@ -1,11 +1,13 @@
 import type PocketBase from 'pocketbase';
+import type { RecordModel } from 'pocketbase';
 import type { ReactElement, ReactNode } from 'react';
 import { PocketBaseContext } from '../context';
+import type { DefaultDatabase, TypedPocketBase } from '../types';
 
 /**
  * Props for the PocketBaseProvider component.
  */
-interface PocketBaseProviderProps {
+interface PocketBaseProviderProps<TDatabase extends Record<string, RecordModel> = DefaultDatabase> {
   /**
    * React children to render
    */
@@ -14,7 +16,7 @@ interface PocketBaseProviderProps {
   /**
    * PocketBase client instance
    */
-  pocketBase: InstanceType<typeof PocketBase>;
+  pocketBase: PocketBase | TypedPocketBase<TDatabase>;
 }
 
 /**
@@ -38,7 +40,24 @@ interface PocketBaseProviderProps {
  *   );
  * }
  * ```
+ *
+ * @example With typed database schema (for pocketbase-typegen)
+ * ```tsx
+ * import PocketBase from 'pocketbase';
+ * import { PocketBaseProvider, type TypedPocketBase } from 'pocketbase-react-hooks';
+ * import type { Database } from './pocketbase-types';
+ *
+ * const pb = new PocketBase('http://127.0.0.1:8090') as TypedPocketBase<Database>;
+ *
+ * function App() {
+ *   return (
+ *     <PocketBaseProvider<Database> pocketBase={pb}>
+ *       <YourApp />
+ *     </PocketBaseProvider>
+ *   );
+ * }
+ * ```
  */
-export function PocketBaseProvider({ children, pocketBase }: PocketBaseProviderProps): ReactElement {
-  return <PocketBaseContext.Provider value={pocketBase}>{children}</PocketBaseContext.Provider>;
+export function PocketBaseProvider<TDatabase extends Record<string, RecordModel> = DefaultDatabase>({ children, pocketBase }: PocketBaseProviderProps<TDatabase>): ReactElement {
+  return <PocketBaseContext.Provider value={pocketBase as TypedPocketBase<TDatabase>}>{children}</PocketBaseContext.Provider>;
 }

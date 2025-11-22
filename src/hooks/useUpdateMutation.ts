@@ -1,36 +1,43 @@
 import type { RecordModel, RecordOptions } from 'pocketbase';
 import { useCallback, useMemo, useState } from 'react';
-import type { UseUpdateMutationResult } from '../types';
+import type { CollectionRecord, UseUpdateMutationResult } from '../types';
 import { usePocketBase } from './usePocketBase';
+
+export function useUpdateMutation<TDatabase extends Record<string, RecordModel>, TCollection extends keyof TDatabase & string>(collectionName: TCollection, id: CollectionRecord<TDatabase, TCollection>['id'] | null): UseUpdateMutationResult<CollectionRecord<TDatabase, TCollection>>;
+
+export function useUpdateMutation<TRecord extends RecordModel>(collectionName: string, id: TRecord['id'] | null): UseUpdateMutationResult<TRecord>;
 
 /**
  * Hook for updating existing records in a PocketBase collection.
  *
- * @template Record - The record type extending RecordModel
+ * @template TDatabase - The database schema (inferred from PocketBaseProvider)
+ * @template TCollection - The collection name (must be a key in TDatabase)
+ * @template TRecord - The record type (used when providing explicit type)
  * @param collectionName - The name of the PocketBase collection
  * @param id - The ID of the record to update
  * @returns An object containing the mutate function and mutation state
  *
- * @example
+ * @example Basic usage with explicit type
  * ```tsx
- * const { mutate, isPending, isSuccess, error } = useUpdateMutation<Post>('posts');
+ * const { mutateAsync, isPending } = useUpdateMutation<Post>('posts', postId);
+ * await mutateAsync({ title: 'Updated' });
+ * ```
  *
- * const handleUpdate = async () => {
- *   const updated = await mutate('record_id', { title: 'Updated Title' });
- *   if (updated) {
- *     console.log('Updated:', updated);
- *   }
- * };
+ * @example With typed database schema (auto-inferred from PocketBaseProvider)
+ * ```tsx
+ * // Types are automatically inferred from Database schema
+ * const { mutateAsync } = useUpdateMutation('posts', postId);
+ * await mutateAsync({ title: 'Updated' }); // Typed as PostsResponse
  * ```
  */
-export function useUpdateMutation<Record extends RecordModel>(collectionName: string, id: Record['id'] | null): UseUpdateMutationResult<Record> {
+export function useUpdateMutation<TRecord extends RecordModel>(collectionName: string, id: TRecord['id'] | null): UseUpdateMutationResult<TRecord> {
   const pb = usePocketBase();
   const recordService = useMemo(() => pb.collection(collectionName), [pb, collectionName]);
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const mutateAsync = useCallback(
-    async (bodyParams: Partial<Record>, options?: RecordOptions): Promise<Record> => {
+    async (bodyParams: Partial<TRecord>, options?: RecordOptions): Promise<TRecord> => {
       if (!id) {
         throw new Error('ID is required');
       }
@@ -39,7 +46,7 @@ export function useUpdateMutation<Record extends RecordModel>(collectionName: st
         setIsPending(true);
         setError(null);
         const record = options ? await recordService.update(id, bodyParams, options) : await recordService.update(id, bodyParams);
-        return record as Record;
+        return record as TRecord;
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Error updating record';
         setError(errorMessage);
@@ -52,7 +59,7 @@ export function useUpdateMutation<Record extends RecordModel>(collectionName: st
   );
 
   const mutate = useCallback(
-    (bodyParams: Partial<Record>, options?: RecordOptions): void => {
+    (bodyParams: Partial<TRecord>, options?: RecordOptions): void => {
       mutateAsync(bodyParams, options).catch(() => {
         // Error is already handled in mutateAsync
       });
@@ -61,7 +68,7 @@ export function useUpdateMutation<Record extends RecordModel>(collectionName: st
   );
 
   return useMemo(
-    (): UseUpdateMutationResult<Record> => ({
+    (): UseUpdateMutationResult<TRecord> => ({
       mutate,
       mutateAsync,
       isPending,

@@ -1,6 +1,8 @@
 import type PocketBase from 'pocketbase';
+import type { RecordModel } from 'pocketbase';
 import { useContext } from 'react';
 import { PocketBaseContext } from '../context';
+import type { DefaultDatabase, TypedPocketBase } from '../types';
 
 /**
  * Hook for accessing the PocketBase client instance.
@@ -21,11 +23,11 @@ import { PocketBaseContext } from '../context';
  * };
  * ```
  */
-export function usePocketBase(): PocketBase {
+export function usePocketBase<TDatabase extends Record<string, RecordModel> = DefaultDatabase>(): TypedPocketBase<TDatabase> {
   const pb = useContext(PocketBaseContext);
   if (!pb) {
     throw new Error('usePocketBase must be used within a PocketBaseProvider');
   }
 
-  return pb;
+  return pb as TypedPocketBase<TDatabase>;
 }
