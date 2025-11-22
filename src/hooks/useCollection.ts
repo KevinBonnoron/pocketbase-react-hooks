@@ -6,10 +6,7 @@ import type { CollectionRecord, DefaultDatabase, UseCollectionOptions, UseCollec
 import { useQueryState } from './internal/useQueryState';
 import { usePocketBase } from './usePocketBase';
 
-export function useCollection<TDatabase extends Record<string, RecordModel>, TCollection extends keyof TDatabase & string>(
-  collectionName: TCollection,
-  options?: UseCollectionOptions<CollectionRecord<TDatabase, TCollection>>,
-): UseCollectionResult<CollectionRecord<TDatabase, TCollection>>;
+export function useCollection<TDatabase extends Record<string, RecordModel>, TCollection extends keyof TDatabase & string>(collectionName: TCollection, options?: UseCollectionOptions<CollectionRecord<TDatabase, TCollection>>): UseCollectionResult<CollectionRecord<TDatabase, TCollection>>;
 
 export function useCollection<TRecord extends RecordModel>(collectionName: string, options?: UseCollectionOptions<TRecord>): UseCollectionResult<TRecord>;
 

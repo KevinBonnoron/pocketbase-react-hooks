@@ -1,7 +1,7 @@
-import PocketBase from 'pocketbase';
-import { PocketBaseProvider, useCollection, useRecord, useAuth } from '../src';
-import type { TypedPocketBase } from '../src';
 import type { AuthRecord, RecordModel } from 'pocketbase';
+import PocketBase from 'pocketbase';
+import type { TypedPocketBase } from '../src';
+import { PocketBaseProvider, useAuth, useCollection, useRecord } from '../src';
 
 type PostsResponse = RecordModel & {
   title: string;
@@ -77,10 +77,14 @@ function Auth() {
       {user ? (
         <div>
           <p>Welcome, {user.name}!</p>
-          <button onClick={signOut}>Sign Out</button>
+          <button type="button" onClick={signOut}>
+            Sign Out
+          </button>
         </div>
       ) : (
-        <button onClick={handleLogin}>Sign In</button>
+        <button type="button" onClick={handleLogin}>
+          Sign In
+        </button>
       )}
     </div>
   );

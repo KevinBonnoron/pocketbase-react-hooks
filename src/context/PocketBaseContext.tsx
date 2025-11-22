@@ -1,5 +1,5 @@
-import type { RecordModel } from 'pocketbase';
 import type PocketBase from 'pocketbase';
+import type { RecordModel } from 'pocketbase';
 import { type Context, createContext, useContext } from 'react';
 import type { DefaultDatabase, TypedPocketBase } from '../types';
 

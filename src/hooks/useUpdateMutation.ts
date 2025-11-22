@@ -3,10 +3,7 @@ import { useCallback, useMemo, useState } from 'react';
 import type { CollectionRecord, UseUpdateMutationResult } from '../types';
 import { usePocketBase } from './usePocketBase';
 
-export function useUpdateMutation<TDatabase extends Record<string, RecordModel>, TCollection extends keyof TDatabase & string>(
-  collectionName: TCollection,
-  id: CollectionRecord<TDatabase, TCollection>['id'] | null,
-): UseUpdateMutationResult<CollectionRecord<TDatabase, TCollection>>;
+export function useUpdateMutation<TDatabase extends Record<string, RecordModel>, TCollection extends keyof TDatabase & string>(collectionName: TCollection, id: CollectionRecord<TDatabase, TCollection>['id'] | null): UseUpdateMutationResult<CollectionRecord<TDatabase, TCollection>>;
 
 export function useUpdateMutation<TRecord extends RecordModel>(collectionName: string, id: TRecord['id'] | null): UseUpdateMutationResult<TRecord>;
 

@@ -12,11 +12,7 @@ export function useRecord<TDatabase extends Record<string, RecordModel>, TCollec
   options?: UseRecordOptions<CollectionRecord<TDatabase, TCollection>>,
 ): UseRecordResult<CollectionRecord<TDatabase, TCollection>>;
 
-export function useRecord<TDatabase extends Record<string, RecordModel>, TCollection extends keyof TDatabase & string>(
-  collectionName: TCollection,
-  filter: string | null | undefined,
-  options?: UseRecordOptions<CollectionRecord<TDatabase, TCollection>>,
-): UseRecordResult<CollectionRecord<TDatabase, TCollection>>;
+export function useRecord<TDatabase extends Record<string, RecordModel>, TCollection extends keyof TDatabase & string>(collectionName: TCollection, filter: string | null | undefined, options?: UseRecordOptions<CollectionRecord<TDatabase, TCollection>>): UseRecordResult<CollectionRecord<TDatabase, TCollection>>;
 
 export function useRecord<TRecord extends RecordModel>(collectionName: string, recordId: TRecord['id'] | null | undefined, options?: UseRecordOptions<TRecord>): UseRecordResult<TRecord>;
 

@@ -3,9 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { AuthCollectionRecord, UseAuthOptions, UseAuthResult } from '../types';
 import { usePocketBase } from './usePocketBase';
 
-export function useAuth<TDatabase extends Record<string, RecordModel>, TCollection extends keyof TDatabase & string = 'users'>(
-  options?: UseAuthOptions,
-): UseAuthResult<AuthCollectionRecord<TDatabase, TCollection>>;
+export function useAuth<TDatabase extends Record<string, RecordModel>, TCollection extends keyof TDatabase & string = 'users'>(options?: UseAuthOptions): UseAuthResult<AuthCollectionRecord<TDatabase, TCollection>>;
 
 export function useAuth<TUser extends AuthRecord>(options?: UseAuthOptions): UseAuthResult<TUser>;
 

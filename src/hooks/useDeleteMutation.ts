@@ -3,10 +3,7 @@ import { useCallback, useMemo, useState } from 'react';
 import type { CollectionRecord, UseDeleteMutationResult } from '../types';
 import { usePocketBase } from './usePocketBase';
 
-export function useDeleteMutation<TDatabase extends Record<string, RecordModel>, TCollection extends keyof TDatabase & string>(
-  collectionName: TCollection,
-  id: CollectionRecord<TDatabase, TCollection>['id'] | null,
-): UseDeleteMutationResult;
+export function useDeleteMutation<TDatabase extends Record<string, RecordModel>, TCollection extends keyof TDatabase & string>(collectionName: TCollection, id: CollectionRecord<TDatabase, TCollection>['id'] | null): UseDeleteMutationResult;
 
 export function useDeleteMutation<TRecord extends RecordModel = RecordModel>(collectionName: string, id: TRecord['id'] | null): UseDeleteMutationResult;
 
