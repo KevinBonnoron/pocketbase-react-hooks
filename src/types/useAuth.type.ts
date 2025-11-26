@@ -14,6 +14,15 @@ export interface UseAuthOptions {
    * Enable or disable real-time updates (default: true)
    */
   realtime?: boolean;
+
+  /**
+   * Refresh user data from the server on mount (default: false)
+   *
+   * When true, the hook will call authRefresh() on mount if the user is
+   * already authenticated. This ensures the user data is up-to-date
+   * after screen navigation or component remounting.
+   */
+  refreshOnMount?: boolean;
 }
 
 /**

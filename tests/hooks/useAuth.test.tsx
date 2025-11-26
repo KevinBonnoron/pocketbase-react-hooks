@@ -208,6 +208,105 @@ describe('useAuth', () => {
     });
   });
 
+  describe('refreshOnMount', () => {
+    it('should refresh user data on mount when refreshOnMount is true', async () => {
+      const staleUser = { id: '1', email: 'test@example.com', custom_field: 'old_value' };
+      const freshUser = { id: '1', email: 'test@example.com', custom_field: 'new_value' };
+
+      const mockPocketBaseWithUser = createMockAuthPocketBase({
+        isValid: true,
+        record: staleUser,
+      });
+
+      const mockAuthRefresh = vi.fn().mockResolvedValue({ record: freshUser, token: 'new-token' });
+      mockPocketBaseWithUser.collection = vi.fn().mockReturnValue({
+        authRefresh: mockAuthRefresh,
+        subscribe: vi.fn(() => Promise.resolve(() => {})),
+      });
+
+      const wrapper = createWrapper(mockPocketBaseWithUser);
+
+      const { result } = renderHook(() => useAuth({ refreshOnMount: true }), { wrapper });
+
+      expect(result.current.user).toEqual(staleUser);
+
+      await waitFor(() => {
+        expect(mockAuthRefresh).toHaveBeenCalled();
+        expect(result.current.user).toEqual(freshUser);
+      });
+    });
+
+    it('should not refresh when refreshOnMount is false (default)', async () => {
+      const staleUser = { id: '1', email: 'test@example.com', custom_field: 'old_value' };
+
+      const mockPocketBaseWithUser = createMockAuthPocketBase({
+        isValid: true,
+        record: staleUser,
+      });
+
+      const mockAuthRefresh = vi.fn().mockResolvedValue({ record: staleUser, token: 'token' });
+      mockPocketBaseWithUser.collection = vi.fn().mockReturnValue({
+        authRefresh: mockAuthRefresh,
+        subscribe: vi.fn(() => Promise.resolve(() => {})),
+      });
+
+      const wrapper = createWrapper(mockPocketBaseWithUser);
+
+      renderHook(() => useAuth(), { wrapper });
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      expect(mockAuthRefresh).not.toHaveBeenCalled();
+    });
+
+    it('should not refresh when not authenticated', async () => {
+      const mockPocketBase = createMockAuthPocketBase({
+        isValid: false,
+        record: null,
+      });
+
+      const mockAuthRefresh = vi.fn().mockResolvedValue({ record: {}, token: 'token' });
+      mockPocketBase.collection = vi.fn().mockReturnValue({
+        authRefresh: mockAuthRefresh,
+        subscribe: vi.fn(() => Promise.resolve(() => {})),
+      });
+
+      const wrapper = createWrapper(mockPocketBase);
+
+      renderHook(() => useAuth({ refreshOnMount: true }), { wrapper });
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      expect(mockAuthRefresh).not.toHaveBeenCalled();
+    });
+
+    it('should silently ignore refresh errors', async () => {
+      const staleUser = { id: '1', email: 'test@example.com' };
+
+      const mockPocketBaseWithUser = createMockAuthPocketBase({
+        isValid: true,
+        record: staleUser,
+      });
+
+      const mockAuthRefresh = vi.fn().mockRejectedValue(new Error('Network error'));
+      mockPocketBaseWithUser.collection = vi.fn().mockReturnValue({
+        authRefresh: mockAuthRefresh,
+        subscribe: vi.fn(() => Promise.resolve(() => {})),
+      });
+
+      const wrapper = createWrapper(mockPocketBaseWithUser);
+
+      const { result } = renderHook(() => useAuth({ refreshOnMount: true }), { wrapper });
+
+      await waitFor(() => {
+        expect(mockAuthRefresh).toHaveBeenCalled();
+      });
+
+      expect(result.current.user).toEqual(staleUser);
+      expect(result.current.error).toBe(null);
+    });
+  });
+
   describe('signIn', () => {
     it.each`
       scenario         | options                  | expected

@@ -30,7 +30,7 @@ import { usePocketBase } from './usePocketBase';
  * };
  * ```
  */
-export function useAuth<User extends AuthRecord>({ collectionName = 'users', realtime = true }: UseAuthOptions = {}): UseAuthResult<User> {
+export function useAuth<User extends AuthRecord>({ collectionName = 'users', realtime = true, refreshOnMount = false }: UseAuthOptions = {}): UseAuthResult<User> {
   const pb = usePocketBase();
   const [user, setUser] = useState<User | null>(pb.authStore.record as User);
   const [isLoading, setIsLoading] = useState(false);
@@ -42,6 +42,31 @@ export function useAuth<User extends AuthRecord>({ collectionName = 'users', rea
       setUser(model as User);
     });
   }, [pb]);
+
+  useEffect(() => {
+    if (!refreshOnMount || !pb.authStore.isValid) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const refresh = async () => {
+      try {
+        const authData = await recordService.authRefresh<User>();
+        if (!cancelled) {
+          setUser(authData.record);
+        }
+      } catch {
+        // silently ignore refresh errors on mount (e.g., network issues, invalid token)
+      }
+    };
+
+    refresh();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshOnMount, pb.authStore.isValid, recordService]);
 
   useEffect(() => {
     if (!user || !realtime) {
