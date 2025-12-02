@@ -114,7 +114,7 @@ describe('useCollection', () => {
     });
   });
 
-  it('should handle autocancelled requests', async () => {
+  it('should handle autocancelled requests silently', async () => {
     const autocancelError = new Error('The request was autocancelled');
     mockGetFullList.mockRejectedValue(autocancelError);
 
@@ -123,8 +123,34 @@ describe('useCollection', () => {
     const { result } = renderHook(() => useCollection('test'), { wrapper });
 
     return waitFor(() => {
-      expect(result.current.error).toBe('The request was autocancelled');
-      expect(result.current.isError).toBe(true);
+      expect(result.current.error).toBe(null);
+      expect(result.current.isError).toBe(false);
+      expect(result.current.isLoading).toBe(false);
+    });
+  });
+
+  it('should handle React Strict Mode double-mounting without errors', async () => {
+    const mockData = [
+      { id: '1', title: 'Test 1', collectionId: 'test', collectionName: 'test' },
+      { id: '2', title: 'Test 2', collectionId: 'test', collectionName: 'test' },
+    ];
+
+    mockGetFullList.mockResolvedValue(mockData);
+
+    const wrapper = createWrapper(mockPocketBase);
+
+    const { result, unmount, rerender } = renderHook(() => useCollection('test'), { wrapper });
+
+    unmount();
+
+    const { result: result2 } = renderHook(() => useCollection('test'), { wrapper });
+
+    return waitFor(() => {
+      expect(result2.current.data).toEqual(mockData);
+      expect(result2.current.isLoading).toBe(false);
+      expect(result2.current.isSuccess).toBe(true);
+      expect(result2.current.isError).toBe(false);
+      expect(result2.current.error).toBe(null);
     });
   });
 
@@ -318,7 +344,7 @@ describe('useCollection', () => {
       const { result } = renderHook(() => useCollection('test', { enabled: false }), { wrapper });
 
       expect(result.current.isLoading).toBe(false);
-      expect(result.current.data).toEqual([]);
+      expect(result.current.data).toEqual(undefined);
       expect(mockGetFullList).not.toHaveBeenCalled();
     });
 

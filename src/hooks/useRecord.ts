@@ -1,10 +1,17 @@
 import type { RecordModel } from 'pocketbase';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { queryCache } from '../lib/queryCache';
+import { generateQueryKey } from '../lib/queryKey';
 import { applyTransformers } from '../lib/utils';
 import { dateTransformer } from '../transformers';
 import type { UseRecordOptions, UseRecordResult } from '../types';
-import { useQueryState } from './internal/useQueryState';
+import type { QueryResult } from '../types/query-result.type';
 import { usePocketBase } from './usePocketBase';
+
+function isAutoCancelError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  return error.name === 'AbortError' || error.message.includes('autocancelled');
+}
 
 /**
  * Hook for fetching and subscribing to a single PocketBase record.
@@ -39,47 +46,86 @@ export function useRecord<Record extends RecordModel>(collectionName: string, re
 
   const isId = recordIdOrFilter ? !/[=<>~]/.test(recordIdOrFilter) : false;
 
-  const queryState = useQueryState<Record | undefined>({
-    defaultValue: defaultValue ?? undefined,
-    initialLoading: !!recordIdOrFilter,
-  });
+  const [data, setData] = useState<Record | undefined>(defaultValue);
+  const [isLoading, setIsLoading] = useState(!!recordIdOrFilter);
+  const [error, setError] = useState<string | null>(null);
 
   const transformers = useRef(options.transformers ?? [dateTransformer<Record>()]);
   useEffect(() => {
     transformers.current = options.transformers ?? [dateTransformer<Record>()];
   }, [options.transformers]);
 
-  const fetcher = useCallback(async (): Promise<Record> => {
-    if (!recordIdOrFilter) {
-      throw new Error('Record ID or filter is required');
-    }
-
-    if (isId) {
-      return await recordService.getOne<Record>(recordIdOrFilter, {
-        ...(expand && { expand }),
-        ...(fields && { fields }),
-        ...(requestKey && { requestKey }),
-      });
-    } else {
-      return await recordService.getFirstListItem<Record>(recordIdOrFilter, {
-        ...(expand && { expand }),
-        ...(fields && { fields }),
-        ...(requestKey && { requestKey }),
-      });
-    }
-  }, [recordService, recordIdOrFilter, expand, fields, isId, requestKey]);
+  const cacheKey = useMemo(
+    () =>
+      requestKey ??
+      generateQueryKey({
+        collection: collectionName,
+        recordIdOrFilter,
+        expand,
+        fields,
+        isId,
+      }),
+    [collectionName, recordIdOrFilter, expand, fields, isId, requestKey],
+  );
 
   useEffect(() => {
     if (!recordIdOrFilter) {
-      queryState.reset();
+      setData(defaultValue);
+      setIsLoading(false);
+      setError(null);
       return;
     }
 
-    return queryState.executeFetch(async () => {
-      const record = await fetcher();
-      return applyTransformers(record, transformers.current);
-    }, 'Failed to fetch record');
-  }, [recordIdOrFilter, fetcher, queryState.reset, queryState.executeFetch]);
+    let cancelled = false;
+
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const result = await queryCache.fetch<Record>(cacheKey, async () => {
+          const rawData = isId
+            ? await recordService.getOne<Record>(recordIdOrFilter, {
+                ...(expand && { expand }),
+                ...(fields && { fields }),
+                ...(requestKey && { requestKey }),
+              })
+            : await recordService.getFirstListItem<Record>(recordIdOrFilter, {
+                ...(expand && { expand }),
+                ...(fields && { fields }),
+                ...(requestKey && { requestKey }),
+              });
+
+          return applyTransformers(rawData, transformers.current);
+        });
+
+        if (!cancelled) {
+          setData(result);
+        }
+      } catch (err) {
+        if (!cancelled && !isAutoCancelError(err)) {
+          setError(err instanceof Error ? err.message : 'Failed to fetch record');
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    const unsubscribe = queryCache.subscribe<Record>(cacheKey, (cachedData) => {
+      if (!cancelled) {
+        setData(cachedData);
+      }
+    });
+
+    fetchData();
+
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, [recordIdOrFilter, recordService, expand, fields, isId, requestKey, cacheKey, defaultValue]);
 
   useEffect(() => {
     if (!recordIdOrFilter || !realtime) return;
@@ -90,11 +136,11 @@ export function useRecord<Record extends RecordModel>(collectionName: string, re
         (e) => {
           switch (e.action) {
             case 'update':
-              queryState.setError(null);
-              queryState.setData(applyTransformers(e.record, transformers.current));
+              setError(null);
+              setData(applyTransformers(e.record, transformers.current));
               break;
             case 'delete':
-              queryState.setData(undefined);
+              setData(undefined);
               break;
           }
         },
@@ -114,11 +160,11 @@ export function useRecord<Record extends RecordModel>(collectionName: string, re
           switch (e.action) {
             case 'create':
             case 'update':
-              queryState.setError(null);
-              queryState.setData(applyTransformers(e.record, transformers.current));
+              setError(null);
+              setData(applyTransformers(e.record, transformers.current));
               break;
             case 'delete':
-              queryState.setData((current) => (current && current.id === e.record.id ? undefined : current));
+              setData((current) => (current && current.id === e.record.id ? undefined : current));
               break;
           }
         },
@@ -133,7 +179,37 @@ export function useRecord<Record extends RecordModel>(collectionName: string, re
         unsubscribe.then((unsub) => unsub());
       };
     }
-  }, [recordService, recordIdOrFilter, expand, isId, realtime, queryState.setData, queryState.setError, requestKey]);
+  }, [recordService, recordIdOrFilter, expand, isId, realtime, requestKey]);
 
-  return queryState.result;
+  const result: QueryResult<Record | undefined> = useMemo(() => {
+    if (isLoading) {
+      return {
+        isLoading: true,
+        isSuccess: false,
+        isError: false,
+        error: null,
+        data: undefined,
+      };
+    }
+
+    if (error) {
+      return {
+        isLoading: false,
+        isSuccess: false,
+        isError: true,
+        error,
+        data: undefined,
+      };
+    }
+
+    return {
+      isLoading: false,
+      isSuccess: true,
+      isError: false,
+      error: null,
+      data,
+    };
+  }, [isLoading, error, data]);
+
+  return result;
 }

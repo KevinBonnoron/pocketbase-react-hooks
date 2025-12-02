@@ -1,10 +1,17 @@
 import type { RecordModel } from 'pocketbase';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { queryCache } from '../lib/queryCache';
+import { generateQueryKey } from '../lib/queryKey';
 import { applyTransformers, sortRecords } from '../lib/utils';
 import { dateTransformer } from '../transformers';
 import type { UseCollectionOptions, UseCollectionResult } from '../types';
-import { useQueryState } from './internal/useQueryState';
+import type { QueryResult } from '../types/query-result.type';
 import { usePocketBase } from './usePocketBase';
+
+function isAutoCancelError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  return error.name === 'AbortError' || error.message.includes('autocancelled');
+}
 
 /**
  * Hook for fetching and subscribing to a PocketBase collection.
@@ -37,46 +44,98 @@ export function useCollection<Record extends RecordModel>(collectionName: string
   const pb = usePocketBase();
   const recordService = useMemo(() => pb.collection(collectionName), [pb, collectionName]);
 
-  const queryState = useQueryState<Record[]>({
-    defaultValue: defaultValue ?? [],
-    initialLoading: enabled,
-  });
+  const [data, setData] = useState<Record[] | undefined>(defaultValue);
+  const [isLoading, setIsLoading] = useState(enabled);
+  const [error, setError] = useState<string | null>(null);
 
   const transformers = useRef(options.transformers ?? [dateTransformer<Record>()]);
   transformers.current = options.transformers ?? [dateTransformer<Record>()];
 
+  const cacheKey = useMemo(
+    () =>
+      requestKey ??
+      generateQueryKey({
+        collection: collectionName,
+        page,
+        perPage,
+        filter,
+        sort,
+        expand,
+        fields,
+        fetchAll,
+      }),
+    [collectionName, page, perPage, filter, sort, expand, fields, fetchAll, requestKey],
+  );
+
   useEffect(() => {
     if (!enabled) {
-      queryState.reset();
+      setData(defaultValue);
+      setIsLoading(false);
+      setError(null);
       return;
     }
 
-    return queryState.executeFetch(async () => {
-      let result: Record[] | null;
-      if (fetchAll) {
-        result = await recordService.getFullList<Record>({
-          ...(page && { page }),
-          ...(perPage && { perPage }),
-          ...(filter && { filter }),
-          ...(sort && { sort }),
-          ...(expand && { expand }),
-          ...(fields && { fields }),
-          ...(requestKey && { requestKey }),
-        });
-      } else {
-        const { items } = await recordService.getList<Record>(page ?? 1, perPage ?? 20, {
-          ...(filter && { filter }),
-          ...(sort && { sort }),
-          ...(expand && { expand }),
-          ...(fields && { fields }),
-          ...(requestKey && { requestKey }),
-        });
-        result = items;
-      }
+    let cancelled = false;
 
-      return result ? result.map((record) => applyTransformers(record, transformers.current)) : [];
-    }, 'Failed to fetch collection');
-  }, [enabled, recordService, page, perPage, filter, sort, expand, fields, fetchAll, requestKey, queryState.reset, queryState.executeFetch]);
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const result = await queryCache.fetch<Record[]>(cacheKey, async () => {
+          let rawData: Record[] | null;
+          if (fetchAll) {
+            rawData = await recordService.getFullList<Record>({
+              ...(page && { page }),
+              ...(perPage && { perPage }),
+              ...(filter && { filter }),
+              ...(sort && { sort }),
+              ...(expand && { expand }),
+              ...(fields && { fields }),
+              ...(requestKey && { requestKey }),
+            });
+          } else {
+            const { items } = await recordService.getList<Record>(page ?? 1, perPage ?? 20, {
+              ...(filter && { filter }),
+              ...(sort && { sort }),
+              ...(expand && { expand }),
+              ...(fields && { fields }),
+              ...(requestKey && { requestKey }),
+            });
+            rawData = items;
+          }
+
+          return rawData ? rawData.map((record) => applyTransformers(record, transformers.current)) : [];
+        });
+
+        if (!cancelled) {
+          setData(result);
+          setIsLoading(false);
+        }
+      } catch (err) {
+        if (!cancelled && !isAutoCancelError(err)) {
+          setError(err instanceof Error ? err.message : 'Failed to fetch collection');
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    const unsubscribe = queryCache.subscribe<Record[]>(cacheKey, (cachedData) => {
+      if (!cancelled) {
+        setData(cachedData);
+      }
+    });
+
+    fetchData();
+
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, [enabled, recordService, page, perPage, filter, sort, expand, fields, fetchAll, requestKey, cacheKey, defaultValue]);
 
   useEffect(() => {
     if (!enabled || !realtime) return;
@@ -84,7 +143,7 @@ export function useCollection<Record extends RecordModel>(collectionName: string
     const unsubscribe = recordService.subscribe<Record>(
       '*',
       (e) => {
-        queryState.setData((currentData) => {
+        setData((currentData) => {
           let newData = currentData ? [...currentData] : [];
           switch (e.action) {
             case 'create':
@@ -131,7 +190,37 @@ export function useCollection<Record extends RecordModel>(collectionName: string
     return () => {
       unsubscribe.then((unsub) => unsub());
     };
-  }, [enabled, realtime, recordService, expand, filter, sort, requestKey, queryState.setData]);
+  }, [enabled, realtime, recordService, expand, filter, sort, requestKey]);
 
-  return queryState.result;
+  const result: QueryResult<Record[]> = useMemo(() => {
+    if (isLoading) {
+      return {
+        isLoading: true,
+        isSuccess: false,
+        isError: false,
+        error: null,
+        data: undefined,
+      };
+    }
+
+    if (error) {
+      return {
+        isLoading: false,
+        isSuccess: false,
+        isError: true,
+        error,
+        data: undefined,
+      };
+    }
+
+    return {
+      isLoading: false,
+      isSuccess: true,
+      isError: false,
+      error: null,
+      data: data as Record[],
+    };
+  }, [isLoading, error, data]);
+
+  return result;
 }

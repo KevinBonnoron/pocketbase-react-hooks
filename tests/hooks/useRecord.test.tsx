@@ -81,6 +81,43 @@ describe('useRecord', () => {
     });
   });
 
+  it('should handle autocancelled requests silently', async () => {
+    const autocancelError = new Error('The request was autocancelled');
+    mockGetOne.mockRejectedValue(autocancelError);
+
+    const wrapper = createWrapper(mockPocketBase);
+
+    const { result } = renderHook(() => useRecord('test', '1'), { wrapper });
+
+    return waitFor(() => {
+      expect(result.current.error).toBe(null);
+      expect(result.current.isError).toBe(false);
+      expect(result.current.isLoading).toBe(false);
+    });
+  });
+
+  it('should handle React Strict Mode double-mounting without errors', async () => {
+    const mockRecord = { id: '1', title: 'Test Record', collectionId: 'test', collectionName: 'test' };
+
+    mockGetOne.mockResolvedValue(mockRecord);
+
+    const wrapper = createWrapper(mockPocketBase);
+
+    const { unmount } = renderHook(() => useRecord('test', '1'), { wrapper });
+
+    unmount();
+
+    const { result: result2 } = renderHook(() => useRecord('test', '1'), { wrapper });
+
+    return waitFor(() => {
+      expect(result2.current.data).toEqual(mockRecord);
+      expect(result2.current.isLoading).toBe(false);
+      expect(result2.current.isSuccess).toBe(true);
+      expect(result2.current.isError).toBe(false);
+      expect(result2.current.error).toBe(null);
+    });
+  });
+
   it('should use custom options', async () => {
     const mockRecord = { id: '1', title: 'Test Record', collectionId: 'test', collectionName: 'test' };
     mockGetOne.mockResolvedValue(mockRecord);
